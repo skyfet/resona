@@ -81,6 +81,7 @@ export function deserializeCheckpoint(raw, sanitize = null) {
   } catch {
     return null;
   }
+  if (!parsed || typeof parsed !== "object") return null;
 
   let migrated = parsed;
   if (!migrated.version || migrated.version === 1) {
