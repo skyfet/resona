@@ -38,20 +38,35 @@
   "banners": [
     {
       "banner_id": "standard_forest",
-      "title": "Стандартный лесной баннер",
-      "description": "Базовый набор наград. Персонаж выпадает с шансом 10%, иначе оружие.",
+      "title": "Баннер «Спасение Травницы»",
+      "description": "В центре баннера — Травница Лиора. Если выпадет, её можно выбрать лидером (T): быстрые атаки, AoE-удар с лечением и яд.",
       "art_path": "placeholder://forest-banner-art",
       "cost_currency_id": "wish_token",
       "cost_amount": 1,
       "character_chance": 0.1,
       "weapon_pool": [
-        { "id": "weapon_a", "weight": 1 },
-        { "id": "weapon_b", "weight": 1 }
+        {
+          "id": "weapon_a",
+          "weight": 1
+        },
+        {
+          "id": "weapon_b",
+          "weight": 1
+        }
       ],
       "character_pool": [
-        { "id": "char_liora", "weight": 4 },
-        { "id": "char_aerin", "weight": 3 },
-        { "id": "char_miri", "weight": 3 }
+        {
+          "id": "char_liora",
+          "weight": 4
+        },
+        {
+          "id": "char_aerin",
+          "weight": 3
+        },
+        {
+          "id": "char_miri",
+          "weight": 3
+        }
       ]
     }
   ]
