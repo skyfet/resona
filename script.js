@@ -312,13 +312,8 @@ const state = {
     spawned: false,
   },
   ui: {
-    menuOpen: false,
-    gachaOpen: false,
-    inventoryOpen: false,
-    worldMapOpen: false,
-    characterMenuOpen: false,
-    collectionOpen: false,
-    gachaResultOpen: false,
+    mode: "none",
+    overlay: "none",
     menuTab: "characters",
     characterSelection: 0,
     weaponSelection: 0,
@@ -545,6 +540,55 @@ function deepCopy(data) {
   return JSON.parse(JSON.stringify(data));
 }
 
+function openUiMode(mode) {
+  state.ui.mode = mode;
+  if (mode === "none") {
+    state.ui.overlay = "none";
+  }
+}
+
+function closeUiMode() {
+  openUiMode("none");
+}
+
+function openOverlay(type) {
+  state.ui.overlay = type;
+}
+
+function closeOverlay() {
+  state.ui.overlay = "none";
+}
+
+function normalizeUiState(ui = {}) {
+  const normalized = {
+    mode: ui.mode || "none",
+    overlay: ui.overlay || "none",
+    menuTab: ui.menuTab || "characters",
+    characterSelection: Number.isFinite(ui.characterSelection) ? ui.characterSelection : 0,
+    weaponSelection: Number.isFinite(ui.weaponSelection) ? ui.weaponSelection : 0,
+    amuletSelection: Number.isFinite(ui.amuletSelection) ? ui.amuletSelection : 0,
+  };
+
+  if (!ui.mode) {
+    if (ui.characterMenuOpen) normalized.mode = "characterMenu";
+    else if (ui.inventoryOpen) normalized.mode = "inventory";
+    else if (ui.worldMapOpen) normalized.mode = "worldMap";
+    else if (ui.collectionOpen) normalized.mode = "collection";
+    else if (ui.gachaOpen) normalized.mode = "gacha";
+    else if (ui.menuOpen) normalized.mode = "pause";
+  }
+
+  if (!ui.overlay) {
+    if (ui.gachaResultOpen) normalized.overlay = "gachaResult";
+    else if (state.dialogue) normalized.overlay = "dialogue";
+    else if (state.registration?.active) normalized.overlay = "quiz";
+    else if (state.skillChoice?.active) normalized.overlay = "skillChoice";
+    else if (state.recipeBook?.open) normalized.overlay = "recipeBook";
+  }
+
+  return normalized;
+}
+
 function withStorage(callback) {
   try {
     return callback(window.localStorage);
@@ -675,13 +719,7 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   Object.assign(state.flags, snapshot.flags || {});
   Object.assign(state.skills, snapshot.skills || {});
   Object.assign(state.combatMods, snapshot.combatMods || {});
-  Object.assign(state.ui, snapshot.ui || {});
-  if (typeof state.ui.inventoryOpen !== "boolean") state.ui.inventoryOpen = false;
-  if (typeof state.ui.worldMapOpen !== "boolean") state.ui.worldMapOpen = false;
-  if (typeof state.ui.characterMenuOpen !== "boolean") state.ui.characterMenuOpen = false;
-  if (typeof state.ui.collectionOpen !== "boolean") state.ui.collectionOpen = false;
-  if (typeof state.ui.gachaResultOpen !== "boolean") state.ui.gachaResultOpen = false;
-  if (!state.ui.menuTab) state.ui.menuTab = "characters";
+  Object.assign(state.ui, normalizeUiState(snapshot.ui || {}));
   if (!state.party || typeof state.party !== "object") {
     state.party = { leader: "Листи", members: [] };
   }
@@ -758,13 +796,8 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   state.dialogue = null;
   applyLoadoutStats();
   state.recipeBook.open = false;
-  state.ui.menuOpen = false;
-  state.ui.gachaOpen = false;
-  state.ui.inventoryOpen = false;
-  state.ui.worldMapOpen = false;
-  state.ui.characterMenuOpen = false;
-  state.ui.collectionOpen = false;
-  state.ui.gachaResultOpen = false;
+  closeUiMode();
+  closeOverlay();
   state.ui.menuTab = "characters";
   state.ui.characterSelection = 0;
   state.ui.weaponSelection = 0;
@@ -986,6 +1019,7 @@ function runGachaSpins(spins) {
 
 function startDialogue(lines, onEnd) {
   if (!lines.length) return;
+  openOverlay("dialogue");
   state.dialogue = {
     lines,
     index: 0,
@@ -1000,7 +1034,10 @@ function nextDialogueLine() {
   if (state.dialogue.index >= state.dialogue.lines.length) {
     const callback = state.dialogue.onEnd;
     state.dialogue = null;
-  applyLoadoutStats();
+    if (state.ui.overlay === "dialogue") {
+      closeOverlay();
+    }
+    applyLoadoutStats();
     if (typeof callback === "function") {
       callback();
     }
@@ -1321,13 +1358,8 @@ function resetAdventureState() {
   state.bridgeChallenge.failures = 0;
   state.bridgeChallenge.planks = [];
   setupAmbientSpawner(false);
-  state.ui.menuOpen = false;
-  state.ui.gachaOpen = false;
-  state.ui.inventoryOpen = false;
-  state.ui.worldMapOpen = false;
-  state.ui.characterMenuOpen = false;
-  state.ui.collectionOpen = false;
-  state.ui.gachaResultOpen = false;
+  closeUiMode();
+  closeOverlay();
   state.savePoints = [];
   state.checkpointMeta.id = null;
   state.checkpointMeta.chapter = null;
@@ -1424,11 +1456,8 @@ function gotoChapter(chapter) {
   state.registration.index = 0;
   state.registration.score = 0;
   state.skillChoice.active = false;
-  state.ui.menuOpen = false;
-  state.ui.gachaOpen = false;
-  state.ui.inventoryOpen = false;
-  state.ui.worldMapOpen = false;
-  state.ui.characterMenuOpen = false;
+  closeUiMode();
+  closeOverlay();
   state.recipeBook.open = false;
   state.savePoints = chapterSavePoints(chapter);
   if (state.checkpointMeta.id && state.checkpointMeta.chapter === chapter) {
@@ -1734,10 +1763,8 @@ function setupMenuInteractions() {
   if (bannerBtn) {
     bannerBtn.addEventListener("click", () => {
       if (state.mode === "menu") return;
-      state.ui.menuOpen = true;
-      state.ui.gachaOpen = true;
-      state.ui.collectionOpen = false;
-      state.ui.gachaResultOpen = false;
+      openUiMode("gacha");
+      closeOverlay();
       setHint("Открыт экран баннера.", 2);
       canvas.focus();
     });
@@ -1746,9 +1773,7 @@ function setupMenuInteractions() {
   if (collectionBtn) {
     collectionBtn.addEventListener("click", () => {
       if (state.mode === "menu") return;
-      state.ui.menuOpen = true;
-      state.ui.collectionOpen = true;
-      state.ui.gachaOpen = false;
+      openUiMode("collection");
       setHint("Открыта коллекция.", 2);
       canvas.focus();
     });
@@ -1767,7 +1792,7 @@ function startGame() {
 }
 
 function inventoryText() {
-  if (!state.ui.inventoryOpen) {
+  if (state.ui.mode !== "inventory") {
     return "Скрыт (I — открыть багаж)";
   }
   const recipe = state.recipeBook.learnedHealingPotion ? "изучен" : state.recipeBook.hasHealingRecipe ? "получен" : "нет";
@@ -1891,61 +1916,50 @@ function checkGlobalKeys() {
     toggleFullscreen();
   }
   if (consumeKey(["KeyM"]) && state.mode !== "menu" && !state.dialogue && !state.registration.active && !state.skillChoice.active) {
-    state.ui.menuOpen = !state.ui.menuOpen;
-    if (!state.ui.menuOpen) {
-      state.ui.gachaOpen = false;
-      state.ui.inventoryOpen = false;
-      state.ui.worldMapOpen = false;
-      state.ui.characterMenuOpen = false;
-      state.ui.collectionOpen = false;
-      state.ui.gachaResultOpen = false;
-    } else {
+    if (state.ui.mode === "none") {
+      openUiMode("pause");
       setHint("Меню: P персонаж, I рюкзак, R книга, G баннеры, C коллекция.", 2.8);
+    } else {
+      closeUiMode();
     }
   }
   if (consumeKey(["KeyP"]) && state.mode !== "menu") {
-    state.ui.menuOpen = true;
-    state.ui.characterMenuOpen = !state.ui.characterMenuOpen;
-    if (state.ui.characterMenuOpen) {
-      state.ui.gachaOpen = false;
-      state.ui.collectionOpen = false;
-      state.ui.inventoryOpen = false;
+    if (state.ui.mode === "characterMenu") {
+      closeUiMode();
+    } else {
+      openUiMode("characterMenu");
       state.ui.menuTab = "characters";
       setHint("Меню персонажей: 1/2/3 — вкладки, ←/→ выбор, Enter — применить.", 2.6);
     }
   }
   if (consumeKey(["KeyI"]) && state.mode !== "menu") {
-    state.ui.inventoryOpen = !state.ui.inventoryOpen;
-    if (state.ui.inventoryOpen) {
-      state.ui.worldMapOpen = false;
-      state.ui.characterMenuOpen = false;
-      state.ui.collectionOpen = false;
-    }
+    if (state.ui.mode === "inventory") closeUiMode();
+    else openUiMode("inventory");
   }
   if (consumeKey(["Tab"]) && state.mode !== "menu") {
-    state.ui.worldMapOpen = !state.ui.worldMapOpen;
-    if (state.ui.worldMapOpen) {
-      state.ui.inventoryOpen = false;
-      state.ui.characterMenuOpen = false;
-      state.ui.collectionOpen = false;
+    if (state.ui.mode === "worldMap") {
+      closeUiMode();
+    } else {
+      openUiMode("worldMap");
       state.mapSelection = state.chapter;
       setHint("Карта: ←/→ выбрать область, Enter — быстрый переход.", 2.4);
     }
   }
-  if (state.ui.worldMapOpen) {
+  if (state.ui.mode === "worldMap") {
     if (consumeKey(["ArrowLeft", "KeyA"])) moveMapSelection(-1);
     if (consumeKey(["ArrowRight", "KeyD"])) moveMapSelection(1);
     if (consumeKey(["Enter", "KeyE"])) fastTravelToSelection();
   }
-  if (state.ui.menuOpen && consumeKey(["KeyC"])) {
-    state.ui.collectionOpen = !state.ui.collectionOpen;
-    if (state.ui.collectionOpen) {
-      state.ui.gachaOpen = false;
-      state.ui.gachaResultOpen = false;
+  if (state.ui.mode !== "none" && consumeKey(["KeyC"])) {
+    if (state.ui.mode === "collection") {
+      openUiMode("pause");
+    } else {
+      openUiMode("collection");
+      closeOverlay();
       setHint("Коллекция открыта.", 2.2);
     }
   }
-  if (state.ui.characterMenuOpen) {
+  if (state.ui.mode === "characterMenu") {
     if (consumeKey(["Digit1"])) state.ui.menuTab = "characters";
     if (consumeKey(["Digit2"])) state.ui.menuTab = "backpack";
     if (consumeKey(["Digit3"])) state.ui.menuTab = "book";
@@ -1956,27 +1970,18 @@ function checkGlobalKeys() {
   if (consumeKey(["Escape"])) {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
-    } else if (state.ui.worldMapOpen) {
-      state.ui.worldMapOpen = false;
-    } else if (state.ui.collectionOpen) {
-      state.ui.collectionOpen = false;
-    } else if (state.ui.characterMenuOpen) {
-      state.ui.characterMenuOpen = false;
-    } else if (state.ui.gachaResultOpen) {
-      state.ui.gachaResultOpen = false;
-    } else if (state.ui.gachaOpen) {
-      state.ui.gachaOpen = false;
-    } else if (state.ui.menuOpen) {
-      state.ui.menuOpen = false;
+    } else if (state.ui.overlay !== "none") {
+      closeOverlay();
+    } else if (state.ui.mode === "gacha" || state.ui.mode === "collection" || state.ui.mode === "characterMenu") {
+      openUiMode("pause");
+    } else if (state.ui.mode !== "none") {
+      closeUiMode();
     }
   }
-  if (state.ui.menuOpen && consumeKey(["KeyG"])) {
-    state.ui.gachaOpen = !state.ui.gachaOpen;
-    state.ui.gachaResultOpen = false;
-    if (state.ui.gachaOpen) {
-      state.ui.collectionOpen = false;
-      state.ui.characterMenuOpen = false;
-    }
+  if (state.ui.mode !== "none" && consumeKey(["KeyG"])) {
+    if (state.ui.mode === "gacha") openUiMode("pause");
+    else openUiMode("gacha");
+    closeOverlay();
   }
 
   if (
@@ -1986,12 +1991,12 @@ function checkGlobalKeys() {
     !state.skillChoice.active &&
     consumeKey(["Enter"])
   ) {
-    if (!state.ui.menuOpen) {
-      state.ui.menuOpen = true;
+    if (state.ui.mode === "none") {
+      openUiMode("pause");
       return;
     }
-    if (state.ui.menuOpen && !state.ui.gachaOpen) {
-      state.ui.gachaOpen = true;
+    if (state.ui.mode !== "gacha") {
+      openUiMode("gacha");
     }
   }
 }
@@ -2025,7 +2030,7 @@ function updateTimers(dt) {
 
   player.mana = clamp(player.mana + player.manaRegen * dt, 0, player.maxMana);
   checkMilestonePerks();
-  if (state.combatMods.allyRegen > 0 && state.mode !== "menu" && !state.ui.menuOpen) {
+  if (state.combatMods.allyRegen > 0 && state.mode !== "menu" && state.ui.mode === "none") {
     player.hp = Math.min(player.maxHp, player.hp + state.combatMods.allyRegen * dt);
   }
 
@@ -2464,6 +2469,7 @@ function damageEnemy(enemy, amount) {
       state.player.level += 1;
       awardWishTokens(4, "отражение налёта летучих мышей");
       state.skillChoice.active = true;
+      openOverlay("skillChoice");
       state.skillChoice.selected = null;
       setObjective("Выберите навык: A - больше урона, B - продолжительный урон.");
       setStoryLine("Новый уровень! Выберите боевой стиль.");
@@ -2699,6 +2705,8 @@ function toggleRecipeBook() {
   }
 
   state.recipeBook.open = !state.recipeBook.open;
+  if (state.recipeBook.open) openOverlay("recipeBook");
+  else if (state.ui.overlay === "recipeBook") closeOverlay();
 }
 
 function tryCraftJar() {
@@ -2978,6 +2986,7 @@ function shouldEnterCastLeafFall() {
 
 function startRegistrationQuiz() {
   state.registration.active = true;
+  openOverlay("quiz");
   state.registration.index = 0;
   state.registration.score = 0;
   setHint("Опрос: используйте A или B для ответа.", 2.4);
@@ -2998,6 +3007,7 @@ function submitRegistrationAnswer(answerLetter) {
   }
 
   state.registration.active = false;
+  if (state.ui.overlay === "quiz") closeOverlay();
   if (state.registration.score >= 2) {
     state.flags.registrationComplete = true;
     awardWishTokens(2, "опрос на зачисление");
@@ -3026,6 +3036,7 @@ function chooseSkillOption(option) {
 
   state.flags.skillChoiceMade = true;
   state.skillChoice.active = false;
+  if (state.ui.overlay === "skillChoice") closeOverlay();
   setObjective("Битва окончена. Откройте меню (M) и баннер для круток (G).");
   setStoryLine("Новый навык освоен. Отряд готов к расследованию у источника.");
   gotoChapter(9);
@@ -3269,7 +3280,7 @@ function update(dt) {
   if (state.mode === "menu") return;
 
 
-  if (state.ui.inventoryOpen || state.ui.worldMapOpen || state.ui.characterMenuOpen || state.ui.collectionOpen) {
+  if (["inventory", "worldMap", "characterMenu", "collection"].includes(state.ui.mode)) {
     return;
   }
 
@@ -3298,15 +3309,15 @@ function update(dt) {
     return;
   }
 
-  if (state.ui.menuOpen) {
-    if (state.ui.gachaOpen) {
-      if (state.ui.gachaResultOpen) {
+  if (state.ui.mode !== "none") {
+    if (state.ui.mode === "gacha") {
+      if (state.ui.overlay === "gachaResult") {
         if (consumeKey(["Enter", "KeyE", "KeyO", "Space"])) {
-          state.ui.gachaResultOpen = false;
+          closeOverlay();
         }
       } else if (consumeKey(["KeyA", "KeyJ", "Enter"])) {
         if (runGachaSpins(1)) {
-          state.ui.gachaResultOpen = true;
+          openOverlay("gachaResult");
         }
       }
     }
@@ -4062,7 +4073,7 @@ function drawSkillChoicePanel() {
 }
 
 function drawPauseMenuPanel() {
-  if (!state.ui.menuOpen) return;
+  if (state.ui.mode === "none") return;
 
   ctx.fillStyle = "rgba(11, 16, 13, 0.82)";
   ctx.fillRect(52, 20, 216, 150);
@@ -4078,10 +4089,10 @@ function drawPauseMenuPanel() {
   ctx.fillText("G: Баннеры | C: Коллекция", 62, 88);
   ctx.fillText("2: Рюкзак, 3: Книга, A/Enter: Крутка x1", 62, 100);
 
-  if (state.ui.gachaOpen) {
+  if (state.ui.mode === "gacha") {
     drawGachaBannerPanel();
   }
-  if (state.ui.collectionOpen) {
+  if (state.ui.mode === "collection") {
     drawCollectionPanel();
   }
 }
@@ -4105,7 +4116,7 @@ function drawGachaBannerPanel() {
   const pullLabel = last ? `${last.category === "character" ? "Персонаж" : "Оружие"}: ${last.itemName}` : "Последняя награда: -";
   ctx.fillText(ellipsizeText(`Последняя: ${pullLabel}`, 188), 64, 160);
 
-  if (state.ui.gachaResultOpen && last) {
+  if (state.ui.overlay === "gachaResult" && last) {
     ctx.fillStyle = "rgba(15, 19, 23, 0.95)";
     ctx.fillRect(76, 54, 168, 52);
     ctx.strokeStyle = "#9ec9dd";
@@ -4158,7 +4169,7 @@ function drawCollectionPanel() {
 }
 
 function drawCharacterMenuPanel() {
-  if (!state.ui.characterMenuOpen) return;
+  if (state.ui.mode !== "characterMenu") return;
   ctx.fillStyle = "rgba(10, 18, 28, 0.94)";
   ctx.fillRect(24, 18, 272, 144);
   ctx.strokeStyle = "#8de8d7";
@@ -4317,7 +4328,7 @@ function drawRecipeBookPanel() {
 
 
 function drawInventoryPanel() {
-  if (!state.ui.inventoryOpen) return;
+  if (state.ui.mode !== "inventory") return;
   ctx.fillStyle = "rgba(14, 18, 16, 0.9)";
   ctx.fillRect(20, 20, 280, 140);
   ctx.strokeStyle = "#cfd8b1";
@@ -4345,7 +4356,7 @@ function drawInventoryPanel() {
 }
 
 function drawWorldMapPanel() {
-  if (!state.ui.worldMapOpen) return;
+  if (state.ui.mode !== "worldMap") return;
   ctx.fillStyle = "rgba(10, 17, 18, 0.9)";
   ctx.fillRect(16, 18, 288, 144);
   ctx.strokeStyle = "#9ec8b8";
@@ -4473,7 +4484,7 @@ function renderScene() {
   drawDialoguePanel();
   drawRegistrationPanel();
   drawSkillChoicePanel();
-  if (!state.ui.menuOpen) {
+  if (state.ui.mode === "none") {
     drawVictoryPanel();
   }
   drawRecipeBookPanel();
@@ -4667,10 +4678,8 @@ function renderGameToText() {
       history: state.gacha.lastResults,
       collection: state.gacha.collection,
       active_banner_id: state.gacha.activeBannerId,
-      menu_open: state.ui.menuOpen,
-      banner_open: state.ui.gachaOpen,
-      character_menu_open: state.ui.characterMenuOpen,
-      world_map_open: state.ui.worldMapOpen,
+      ui_mode: state.ui.mode,
+      ui_overlay: state.ui.overlay,
     },
     party: {
       leader: state.party.leader,
