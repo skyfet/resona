@@ -254,10 +254,15 @@ const state = {
     fireflyTimer: 1.8,
     reedTimer: 3.6,
     flaxTimer: 2.8,
+    fireflyLimit: 0,
+    reedLimit: 0,
+    flaxLimit: 0,
+    spawned: false,
   },
   ui: {
     menuOpen: false,
     gachaOpen: false,
+    inventoryOpen: false,
   },
   savePoints: [],
   checkpointMeta: {
@@ -554,6 +559,7 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   Object.assign(state.skills, snapshot.skills || {});
   Object.assign(state.combatMods, snapshot.combatMods || {});
   Object.assign(state.ui, snapshot.ui || {});
+  if (typeof state.ui.inventoryOpen !== "boolean") state.ui.inventoryOpen = false;
   Object.assign(state.inventory, snapshot.inventory || {});
   Object.assign(state.recipeBook, snapshot.recipeBook || {});
 
@@ -615,6 +621,7 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   state.recipeBook.open = false;
   state.ui.menuOpen = false;
   state.ui.gachaOpen = false;
+  state.ui.inventoryOpen = false;
 
   state.objective = snapshot.objective || state.objective;
   state.hint = snapshot.hint || "-";
@@ -809,7 +816,7 @@ function trailCollectibles() {
     { x: 186, y: 106, type: "glass", name: "Стеклянный камень", collected: false },
     { x: 214, y: 80, type: "mint", name: "Мятное растение", collected: false },
     { x: 242, y: 108, type: "frog", name: "Влажная лягушка", collected: false },
-    { x: 266, y: 88, type: "glass", name: "Стеклянный камень", collected: false },
+    { x: 286, y: 88, type: "glass", name: "Стеклянный камень", collected: false },
   ];
 }
 
@@ -819,7 +826,7 @@ function deepForestCollectibles() {
     { x: 118, y: 104, type: "glass", name: "Стеклянный камень", collected: false },
     { x: 152, y: 88, type: "frog", name: "Влажная лягушка", collected: false },
     { x: 188, y: 114, type: "mint", name: "Мятное растение", collected: false },
-    { x: 220, y: 116, type: "frog", name: "Влажная лягушка", collected: false },
+    { x: 240, y: 118, type: "frog", name: "Влажная лягушка", collected: false },
   ];
 }
 
@@ -882,8 +889,8 @@ function buildBridgePlanks() {
 
 function lakeSpawnPoints() {
   return [
-    { x: 102, y: 98, r: 26, timer: 1.6, minInterval: 2.2, maxInterval: 3.4 },
-    { x: 212, y: 94, r: 24, timer: 2.4, minInterval: 2.8, maxInterval: 4.5 },
+    { x: 96, y: 98, r: 24, timer: 2.6, minInterval: 4.8, maxInterval: 6.4 },
+    { x: 216, y: 94, r: 22, timer: 3.4, minInterval: 5.4, maxInterval: 7.2 },
   ];
 }
 
@@ -892,6 +899,10 @@ function setupAmbientSpawner(active) {
   state.resourceSpawner.fireflyTimer = randomRange(1.2, 2.6);
   state.resourceSpawner.reedTimer = randomRange(2.8, 4.4);
   state.resourceSpawner.flaxTimer = randomRange(2.2, 3.8);
+  state.resourceSpawner.fireflyLimit = randomInt(2, 5);
+  state.resourceSpawner.reedLimit = randomInt(1, 4);
+  state.resourceSpawner.flaxLimit = randomInt(3, 6);
+  state.resourceSpawner.spawned = false;
 }
 
 function canSpawnAt(x, y) {
@@ -939,30 +950,45 @@ function countUncollected(type) {
 function updateDynamicResourceSpawns(dt) {
   if (!state.resourceSpawner.active) return;
   if (!(state.chapter === 5 || state.chapter === 7 || state.chapter === 8)) return;
+  if (state.resourceSpawner.spawned) return;
 
   state.resourceSpawner.fireflyTimer -= dt;
   state.resourceSpawner.reedTimer -= dt;
   state.resourceSpawner.flaxTimer -= dt;
 
+  let done = true;
   if (state.resourceSpawner.fireflyTimer <= 0) {
-    if (countUncollected("firefly") < 7) {
+    if (countUncollected("firefly") < state.resourceSpawner.fireflyLimit) {
       spawnResourceByType("firefly");
+      state.resourceSpawner.fireflyTimer = randomRange(0.14, 0.34);
+      done = false;
     }
-    state.resourceSpawner.fireflyTimer = randomRange(1.2, 2.4);
+  } else if (countUncollected("firefly") < state.resourceSpawner.fireflyLimit) {
+    done = false;
   }
 
   if (state.resourceSpawner.reedTimer <= 0) {
-    if (countUncollected("dense_reed") < 5) {
+    if (countUncollected("dense_reed") < state.resourceSpawner.reedLimit) {
       spawnResourceByType("dense_reed");
+      state.resourceSpawner.reedTimer = randomRange(0.2, 0.4);
+      done = false;
     }
-    state.resourceSpawner.reedTimer = randomRange(3.2, 5.2);
+  } else if (countUncollected("dense_reed") < state.resourceSpawner.reedLimit) {
+    done = false;
   }
 
   if (state.resourceSpawner.flaxTimer <= 0) {
-    if (countUncollected("flax_seed") < 6) {
+    if (countUncollected("flax_seed") < state.resourceSpawner.flaxLimit) {
       spawnResourceByType("flax_seed");
+      state.resourceSpawner.flaxTimer = randomRange(0.18, 0.36);
+      done = false;
     }
-    state.resourceSpawner.flaxTimer = randomRange(2.4, 4.2);
+  } else if (countUncollected("flax_seed") < state.resourceSpawner.flaxLimit) {
+    done = false;
+  }
+
+  if (done) {
+    state.resourceSpawner.spawned = true;
   }
 }
 
@@ -1093,6 +1119,7 @@ function resetAdventureState() {
   setupAmbientSpawner(false);
   state.ui.menuOpen = false;
   state.ui.gachaOpen = false;
+  state.ui.inventoryOpen = false;
   state.savePoints = [];
   state.checkpointMeta.id = null;
   state.checkpointMeta.chapter = null;
@@ -1170,6 +1197,7 @@ function gotoChapter(chapter) {
   state.skillChoice.active = false;
   state.ui.menuOpen = false;
   state.ui.gachaOpen = false;
+  state.ui.inventoryOpen = false;
   state.recipeBook.open = false;
   state.savePoints = chapterSavePoints(chapter);
   if (state.checkpointMeta.id && state.checkpointMeta.chapter === chapter) {
@@ -1187,14 +1215,14 @@ function gotoChapter(chapter) {
     state.enemies = [];
     state.drops = [];
     state.wolf = null;
-    setObjective("Поговорите с бабушкой (E). ");
-    setHint("Подойдите к бабушке у очага.", 3);
-    setStoryLine("Нора весь день чувствует нестабильность энергии источника.");
+    setObjective("Поговорите с бабушкой Нурсой (E). ");
+    setHint("Подойдите к Нурсе у очага.", 3);
+    setStoryLine("Листи весь день чувствует нестабильность энергии источника и не может найти себе места.");
     return;
   }
 
   if (chapter === 1) {
-    state.worldBounds = { x: 10, y: 24, w: 300, h: 146 };
+    state.worldBounds = { x: 8, y: 18, w: 304, h: 154 };
     state.player.x = 24;
     state.player.y = 98;
     state.collectibles = [];
@@ -1210,12 +1238,12 @@ function gotoChapter(chapter) {
     setupAmbientSpawner(false);
     setObjective("Пройдите через маленькую деревню и выйдите на тропу.");
     setHint("Двигайтесь вправо по дороге.", 2.6);
-    setStoryLine("Эльфийка выбежала из дома и прошла через сонную деревню.");
+    setStoryLine("Листи выбежала из дома и прошла через сонную деревню, прислушиваясь к дрожи в воздухе.");
     return;
   }
 
   if (chapter === 2) {
-    state.worldBounds = { x: 10, y: 20, w: 300, h: 150 };
+    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
     state.player.x = 24;
     state.player.y = 96;
     state.collectibles = trailCollectibles();
@@ -1236,7 +1264,7 @@ function gotoChapter(chapter) {
   }
 
   if (chapter === 3) {
-    state.worldBounds = { x: 10, y: 20, w: 300, h: 150 };
+    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
     state.player.x = 34;
     state.player.y = 96;
     state.obstacles = [];
@@ -1258,12 +1286,12 @@ function gotoChapter(chapter) {
     setupAmbientSpawner(false);
     setObjective("Победите волка: J/B - удар, K/A - «Порыв ветра», Space - уворот.");
     setHint("Магия тратит ману. Следите за флаконом справа.", 3.2);
-    setStoryLine("Старый волк с большими лапами преградил путь.");
+    setStoryLine("Старый волк с большими лапами преградил путь и рычанием заглушил ветер в кронах.");
     return;
   }
 
   if (chapter === 4) {
-    state.worldBounds = { x: 10, y: 20, w: 300, h: 150 };
+    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
     state.player.x = 24;
     state.player.y = 104;
     state.wolf = null;
@@ -1279,12 +1307,12 @@ function gotoChapter(chapter) {
     setupAmbientSpawner(false);
     setObjective("Осмотрите заваленное дерево рядом с одеждой (E). ");
     setHint("Найдите травницу в правой части леса.", 3);
-    setStoryLine("В чаще лежит одежда, а под деревом слышен слабый голос.");
+    setStoryLine("В чаще лежит разорванная одежда, а под деревом слышен слабый голос, зовущий о помощи.");
     return;
   }
 
   if (chapter === 5) {
-    state.worldBounds = { x: 10, y: 20, w: 300, h: 150 };
+    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
     state.player.x = 24;
     state.player.y = 94;
     state.wolf = null;
@@ -1298,12 +1326,12 @@ function gotoChapter(chapter) {
     setupAmbientSpawner(true);
     setObjective("У озёр победите монстров и соберите рыбий жир (0/3).");
     setHint("Новые ресурсы появляются с разной частотой: светлячки, камыш, семена льна.", 3.4);
-    setStoryLine("Из озёр поднимаются твари. Их рыбий жир усиливает ману.");
+    setStoryLine("Из озёр поднимаются твари, и каждая волна приносит новую угрозу. Рыбий жир пригодится для укрепления маны.");
     return;
   }
 
   if (chapter === 6) {
-    state.worldBounds = { x: 10, y: 42, w: 300, h: 92 };
+    state.worldBounds = { x: 8, y: 34, w: 304, h: 108 };
     state.player.x = 22;
     state.player.y = 94;
     state.wolf = null;
@@ -1318,14 +1346,14 @@ function gotoChapter(chapter) {
     state.bridgeChallenge.sprintCooldown = 0;
     state.bridgeChallenge.planks = buildBridgePlanks();
     setupAmbientSpawner(false);
-    setObjective("Перебегите старый мост. Нажимайте Space, пока доски не отвалились.");
-    setHint("Чем дольше медлите, тем больше провалов в мосту.", 3);
-    setStoryLine("Старый мост трещит под шагами. Нужен быстрый рывок.");
+    setObjective("Перейдите старый мост. Если упали — попытка начнётся заново.");
+    setHint("Space даёт рывок. После провала мост перестраивается и даёт ещё шанс.", 3.2);
+    setStoryLine("Старый мост трещит под шагами, но Листи замечает, что можно пробовать снова, пока не найдёшь ритм.");
     return;
   }
 
   if (chapter === 7) {
-    state.worldBounds = { x: 10, y: 20, w: 300, h: 150 };
+    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
     state.player.x = 22;
     state.player.y = 104;
     state.wolf = null;
@@ -1338,14 +1366,14 @@ function gotoChapter(chapter) {
     state.flags.organizerTalked = false;
     state.flags.registrationComplete = false;
     setupAmbientSpawner(true);
-    setObjective("Поговорите с организатором защиты источника (E).");
+    setObjective("Поговорите с организатором Кэри (E).");
     setHint("Это грибная аллея: светящиеся грибы у магического источника.", 3.3);
-    setStoryLine("У источника собирают отряд для расследования кражи силы.");
+    setStoryLine("У источника собирают отряд для расследования кражи силы: впереди сложный разговор и непростой выбор.");
     return;
   }
 
   if (chapter === 8) {
-    state.worldBounds = { x: 10, y: 20, w: 300, h: 150 };
+    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
     state.player.x = 74;
     state.player.y = 104;
     state.wolf = null;
@@ -1358,12 +1386,12 @@ function gotoChapter(chapter) {
     setupAmbientSpawner(true);
     setObjective("Отразите налёт летучих мышей.");
     setHint("После победы выберите новый навык (A или B).", 3.2);
-    setStoryLine("Пока эльфийку записывали, стая летучих мышей пошла в атаку.");
+    setStoryLine("Пока Листи записывали в отряд, стая летучих мышей вырвалась из тени и пошла в атаку.");
     return;
   }
 
   if (chapter === 9) {
-    state.worldBounds = { x: 10, y: 20, w: 300, h: 150 };
+    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
     state.player.x = 150;
     state.player.y = 104;
     state.wolf = null;
@@ -1376,7 +1404,7 @@ function gotoChapter(chapter) {
     setupAmbientSpawner(true);
     setObjective("Откройте меню (M) и используйте гачу-баннер (G, A, B).");
     setHint("Валюту дают уровни и задания. Крутка: стоимость 2.", 3.2);
-    setStoryLine("Эльфийка вступила в защиту источника и готовится к расследованию.");
+    setStoryLine("Листи вступила в защиту источника и готовится к большому расследованию вместе с новым отрядом.");
   }
 }
 
@@ -1476,6 +1504,9 @@ function startGame() {
 }
 
 function inventoryText() {
+  if (!state.ui.inventoryOpen) {
+    return "Скрыт (I — открыть багаж)";
+  }
   const recipe = state.recipeBook.learnedHealingPotion ? "изучен" : state.recipeBook.hasHealingRecipe ? "получен" : "нет";
   return `мята:${state.inventory.mint} стекло:${state.inventory.glassStone} лягушки:${state.inventory.wetFrog} светлячки:${state.inventory.firefly} камыш:${state.inventory.denseReed} лён:${state.inventory.flaxSeed} рыбий жир:${state.inventory.fishOil} зелья:${state.inventory.healingPotion} рецепт:${recipe}`;
 }
@@ -1523,9 +1554,13 @@ function checkGlobalKeys() {
     state.ui.menuOpen = !state.ui.menuOpen;
     if (!state.ui.menuOpen) {
       state.ui.gachaOpen = false;
+      state.ui.inventoryOpen = false;
     } else {
-      setHint("Игровое меню открыто. G - баннер, A - крутка x1, B - крутка x5.", 2.8);
+      setHint("Меню открыто: G — баннер, A/B — крутки, I — вкладка багажа.", 2.8);
     }
+  }
+  if (consumeKey(["KeyI"]) && state.mode !== "menu") {
+    state.ui.inventoryOpen = !state.ui.inventoryOpen;
   }
   if (consumeKey(["Escape"])) {
     if (document.fullscreenElement) {
@@ -1853,7 +1888,7 @@ function updateLakeMonsterSpawns(dt) {
     lake.timer -= dt;
     if (lake.timer > 0) continue;
     const aliveCount = state.enemies.filter((enemy) => enemy.kind === "lake_spawn" && enemy.alive).length;
-    if (aliveCount < 5) {
+    if (aliveCount < 3) {
       spawnLakeMonster(lake);
     }
     lake.timer = randomRange(lake.minInterval, lake.maxInterval);
@@ -2343,7 +2378,9 @@ function tryBridgeSprint() {
 
 function bridgeFailedStep() {
   state.bridgeChallenge.failures += 1;
-  state.bridgeChallenge.elapsed = Math.max(0, state.bridgeChallenge.elapsed - 1.2);
+  state.bridgeChallenge.elapsed = 0;
+  const bonus = Math.min(0.35, state.bridgeChallenge.failures * 0.05);
+  state.bridgeChallenge.planks = buildBridgePlanks().map((plank) => ({ ...plank, fallAt: plank.fallAt + bonus }));
   state.player.x = 24;
   state.player.y = 94;
   state.player.vx = 0;
@@ -2422,10 +2459,10 @@ function submitRegistrationAnswer(answerLetter) {
   if (state.registration.score >= 2) {
     state.flags.registrationComplete = true;
     awardGachaCoins(2, "опрос на зачисление");
-    setStoryLine("Регистратор одобрил заявку. В этот момент началась тревога.");
+    setStoryLine("Снуп одобрил заявку. В этот момент у источника началась тревога.");
     gotoChapter(8);
   } else {
-    setHint("Ответов недостаточно. Регистратор попросил пройти опрос заново.", 2.6);
+    setHint("Ответов недостаточно. Снуп попросил пройти опрос заново.", 2.6);
     setObjective("Подойдите к столу регистрации и снова пройдите короткий опрос (E).");
   }
 }
@@ -2462,12 +2499,14 @@ function tryInteract() {
     if (nearGrandma && !state.flags.grandmaTalked) {
       startDialogue(
         [
-          "б: Куда ты собралась?",
-          "э: я пойду погулять с подружками.",
-          "б: не обманывай, ты в волшебный лес собралась? ты же знаешь, там опасно и далеко, ты еще слишком молода.",
-          "э: я одна из тех, кто связан с этой энергией! я весь день чувствую, что с ней что-то не так, она стала нестабильной.",
-          "б: я запрещаю тебе идти, как бы ты этого не хотела!",
-          "э: я все равно пойду! прости, бабушка.",
+          "Нурса: Листи, куда ты собралась с таким тревожным лицом в поздний час?",
+          "Листи: Бабушка, я не могу сидеть дома. Лес зовёт, и источник будто срывается с ритма.",
+          "Нурса: Ты снова чувствуешь магию лучше взрослых… но именно поэтому я боюсь за тебя.",
+          "Листи: Я прошла обучение у друидов, умею лечить и защищаться. Я не бегу бездумно.",
+          "Нурса: В волшебном лесу сегодня неспокойно: звери агрессивны, вода в озёрах темнеет.",
+          "Листи: Тем более я должна идти. Если мы опоздаем, пострадает вся деревня.",
+          "Нурса: Возьми мой оберег и обещай возвращаться к кристаллам сохранения.",
+          "Листи: Обещаю. Прости, что спорю, но я вернусь и всё расскажу.",
         ],
         () => {
           state.flags.grandmaTalked = true;
@@ -2502,8 +2541,10 @@ function tryInteract() {
     if (!state.flags.healerFound && (nearTree || nearHealer)) {
       startDialogue(
         [
-          "Э: Тут под деревом одежда... там кто-то есть?",
-          "т: п-помоги...",
+          "Листи: Здесь разорванная одежда и следы когтей... Кто-нибудь меня слышит?",
+          "Травница: Да... я под стволом... не могу выбраться, ветви прижали ногу.",
+          "Листи: Держитесь, я рядом. Сейчас освобожу проход и выведу вас к безопасному месту.",
+          "Травница: Спасибо... если выживу, отдам тебе свиток с рецептом лечебного настоя.",
         ],
         () => {
           state.flags.healerFound = true;
@@ -2528,14 +2569,15 @@ function tryInteract() {
     if (nearOrganizer && !state.flags.organizerTalked) {
       startDialogue(
         [
-          "Организатор: Мы собираем людей со способностями для расследования.",
-          "Организатор: Кто-то похищает неприкосновенную силу источника, из-за этого он слабеет.",
-          "Эльфийка: Я помогу. Я уже видела, как меняется лес вокруг.",
-          "Организатор: Тогда подойдите к столу. Регистратор проведет короткий опрос.",
+          "Кэри: Мы собираем отряд со способностями для расследования и защиты источника.",
+          "Кэри: Кто-то похищает неприкосновенную силу, из-за этого лес болеет и звери теряют разум.",
+          "Листи: Я уже видела это по пути — волк, озёрные твари, раненые жители. Я хочу помочь.",
+          "Кэри: Хорошо говоришь. Но нам нужны не только смелые, нам нужны дисциплинированные.",
+          "Кэри: Подойди к столу. Снуп задаст вопросы и проверит, готова ли ты действовать в команде.",
         ],
         () => {
           state.flags.organizerTalked = true;
-          setObjective("Подойдите к столу регистратора (справа) и пройдите опрос (E).");
+          setObjective("Подойдите к столу Снупа (справа) и пройдите опрос (E).");
           setHint("В опросе ответы выбираются клавишами A/B.", 3);
         }
       );
@@ -2684,6 +2726,11 @@ function update(dt) {
 
   if (state.mode === "menu") return;
 
+
+  if (state.ui.inventoryOpen) {
+    return;
+  }
+
   if (state.dialogue) {
     if (consumeKey(["Enter", "KeyE", "Space"])) {
       nextDialogueLine();
@@ -2789,14 +2836,20 @@ function drawPlayer() {
   const x = Math.round(player.x);
   const y = Math.round(player.y);
 
-  ctx.fillStyle = player.invuln > 0 ? "#fff0bf" : "#f4d2b1";
-  ctx.fillRect(x - 2, y - 8, 4, 3);
+  ctx.fillStyle = player.invuln > 0 ? "#fff3cd" : "#f4d2b1";
+  ctx.fillRect(x - 2, y - 9, 4, 3);
+  ctx.fillStyle = "#8a6be2";
+  ctx.fillRect(x - 4, y - 6, 8, 2);
 
   ctx.fillStyle = "#6d4ec2";
   ctx.fillRect(x - 3, y - 5, 6, 6);
+  ctx.fillStyle = "#8e74dc";
+  ctx.fillRect(x - 2, y - 4, 4, 4);
 
   ctx.fillStyle = "#2fc4a6";
   ctx.fillRect(x - 4, y - 2, 8, 5);
+  ctx.fillStyle = "#52d8bc";
+  ctx.fillRect(x - 3, y - 1, 6, 3);
 
   ctx.fillStyle = "#23343d";
   ctx.fillRect(x - 3, y + 3, 2, 3);
@@ -2809,6 +2862,7 @@ function drawPlayer() {
 
   ctx.fillStyle = "#b7e3ff";
   ctx.fillRect(x + Math.round(player.dirX * 4), y + Math.round(player.dirY * 3), 1, 1);
+  drawEntityName("Листи", x, y - 10, "#e7f7c9");
 }
 
 function drawGrandma() {
@@ -2817,9 +2871,12 @@ function drawGrandma() {
   ctx.fillStyle = "#d5ceb7";
   ctx.fillRect(x - 2, y - 8, 4, 3);
   ctx.fillStyle = "#85714f";
-  ctx.fillRect(x - 3, y - 5, 6, 8);
+  ctx.fillRect(x - 4, y - 5, 8, 8);
+  ctx.fillStyle = "#9a8562";
+  ctx.fillRect(x - 3, y - 4, 6, 5);
   ctx.fillStyle = "#3a2b1e";
   ctx.fillRect(x - 1, y + 3, 2, 3);
+  drawEntityName("Нурса", x, y - 10);
 }
 
 function drawWolf() {
@@ -2839,6 +2896,7 @@ function drawWolf() {
   ctx.fillStyle = "#f5e3cc";
   ctx.fillRect(x + 5, y - 2, 2, 1);
 
+  drawEntityName("Старый волк", x, y - 15, "#f2ded0");
   const barX = x - 12;
   const barY = y - 12;
   const hpRatio = wolf.hp / wolf.maxHp;
@@ -2856,6 +2914,9 @@ function drawHealer() {
   ctx.fillRect(healerX - 2, healerY - 8, 4, 3);
   ctx.fillStyle = "#4c9a63";
   ctx.fillRect(healerX - 3, healerY - 5, 6, 8);
+  ctx.fillStyle = "#7bc58f";
+  ctx.fillRect(healerX - 2, healerY - 4, 4, 5);
+  drawEntityName("Травница", healerX, healerY - 10);
 }
 
 function drawOrganizer() {
@@ -2867,6 +2928,7 @@ function drawOrganizer() {
   ctx.fillRect(x - 3, y - 5, 6, 8);
   ctx.fillStyle = "#d6d18f";
   ctx.fillRect(x - 4, y + 3, 8, 2);
+  drawEntityName("Кэри", x, y - 10, "#d8e8ff");
 }
 
 function drawRegistrar() {
@@ -2878,6 +2940,7 @@ function drawRegistrar() {
   ctx.fillRect(x - 3, y - 5, 6, 8);
   ctx.fillStyle = "#d8bc82";
   ctx.fillRect(x - 8, y + 2, 16, 2);
+  drawEntityName("Снуп", x, y - 10, "#f5edcf");
 }
 
 function drawCollectibles() {
@@ -3031,6 +3094,7 @@ function drawEnemies() {
       ctx.fillRect(x - 1, y + 2, 2, 1);
     }
 
+    drawEntityName(enemy.kind === "bat" ? "Летучая мышь" : "Озёрный монстр", x, y - 10, "#f2d8d8");
     const ratio = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 0;
     ctx.fillStyle = "#271d1d";
     ctx.fillRect(x - 7, y - 8, 14, 2);
@@ -3236,27 +3300,37 @@ function ellipsizeText(text, maxWidth) {
   return "...";
 }
 
+
+function drawEntityName(text, x, y, color = "#f6efcf") {
+  ctx.fillStyle = "rgba(12, 10, 8, 0.72)";
+  const width = Math.max(18, Math.round(ctx.measureText(text).width) + 6);
+  ctx.fillRect(Math.round(x - width / 2), y - 8, width, 8);
+  ctx.fillStyle = color;
+  ctx.font = '7px "Lucida Console", "Courier New", monospace';
+  ctx.fillText(text, Math.round(x - width / 2) + 3, y - 2);
+}
+
 function drawDialoguePanel() {
   if (!state.dialogue) return;
 
   ctx.fillStyle = "rgba(19, 13, 8, 0.88)";
-  ctx.fillRect(10, 132, 300, 40);
+  ctx.fillRect(8, 122, 304, 50);
   ctx.strokeStyle = "#d3b789";
   ctx.lineWidth = 1;
-  ctx.strokeRect(10.5, 132.5, 299, 39);
+  ctx.strokeRect(8.5, 122.5, 303, 49);
 
   const text = state.dialogue.lines[state.dialogue.index];
-  const lines = wrapText(text, 46);
+  const lines = wrapText(text, 50);
   ctx.fillStyle = "#f8ecd1";
   ctx.font = '9px "Lucida Console", "Courier New", monospace';
 
-  const visible = lines.slice(0, 3);
+  const visible = lines.slice(0, 4);
   for (let i = 0; i < visible.length; i += 1) {
-    ctx.fillText(visible[i], 16, 146 + i * 10);
+    ctx.fillText(visible[i], 14, 136 + i * 10);
   }
 
   ctx.fillStyle = "#c8c39d";
-  ctx.fillText("E / Enter / Space", 212, 165);
+  ctx.fillText("E / Enter / Space", 206, 166);
 }
 
 function drawStoryLine() {
@@ -3474,6 +3548,31 @@ function drawRecipeBookPanel() {
   }
 }
 
+
+function drawInventoryPanel() {
+  if (!state.ui.inventoryOpen) return;
+  ctx.fillStyle = "rgba(14, 18, 16, 0.9)";
+  ctx.fillRect(20, 20, 280, 140);
+  ctx.strokeStyle = "#cfd8b1";
+  ctx.strokeRect(20.5, 20.5, 279, 139);
+  ctx.fillStyle = "#eaf3d0";
+  ctx.font = '9px "Lucida Console", "Courier New", monospace';
+  ctx.fillText("Багаж Листи (I — закрыть)", 30, 36);
+  ctx.font = '8px "Lucida Console", "Courier New", monospace';
+  const rows = [
+    `Мята: ${state.inventory.mint}`,
+    `Стеклянный камень: ${state.inventory.glassStone}`,
+    `Влажная лягушка: ${state.inventory.wetFrog}`,
+    `Светлячок: ${state.inventory.firefly}`,
+    `Плотный камыш: ${state.inventory.denseReed}`,
+    `Семена льна: ${state.inventory.flaxSeed}`,
+    `Рыбий жир: ${state.inventory.fishOil}`,
+    `Клык: ${state.inventory.magicFang}`,
+    `Зелье лечения: ${state.inventory.healingPotion}`,
+  ];
+  rows.forEach((line, i) => ctx.fillText(line, 30, 54 + i * 11));
+}
+
 function drawVictoryPanel() {
   if (state.mode !== "victory" && state.chapter !== 9) return;
 
@@ -3547,6 +3646,7 @@ function renderScene() {
   }
   drawRecipeBookPanel();
   drawPauseMenuPanel();
+  drawInventoryPanel();
   drawEdgeMeters();
 
   if (state.flash > 0) {
