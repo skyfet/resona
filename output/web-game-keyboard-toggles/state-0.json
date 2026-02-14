@@ -1,0 +1,130 @@
+{
+  "coordinate_system": "origin top-left; x increases right; y increases down; world units are canvas pixels on 320x180",
+  "mode": "play",
+  "ui_mode": "gameplay",
+  "chapter": 9,
+  "chapter_name": "Единая долина • Источник",
+  "objective": "Автотест клавиатурных переключателей.",
+  "story_line": "Эльфийка продолжает путь с точки сохранения.",
+  "player": {
+    "x": 158,
+    "y": 94,
+    "vx": 0,
+    "vy": 0,
+    "hp": 92,
+    "max_hp": 110,
+    "mana": 26.4,
+    "max_mana": 26.4,
+    "level": 4,
+    "invulnerable": false,
+    "cooldowns": {
+      "dodge": 0,
+      "basic": 0,
+      "wind_gust": 0,
+      "leaf_fall": 0,
+      "bridge_sprint": 0
+    }
+  },
+  "progress": {
+    "grandma_talked": true,
+    "village_passed": true,
+    "gathered_resources": "3/3",
+    "wolf_defeated": true,
+    "leaf_fall_unlocked": true,
+    "healer_found": true,
+    "healer_rescued": true,
+    "lake_quest_done": true,
+    "bridge_passed": true,
+    "organizer_talked": true,
+    "registration_complete": true,
+    "bats_defeated": true,
+    "skill_choice_made": true,
+    "recipe_read": false
+  },
+  "skills": {
+    "wind_gust": true,
+    "leaf_fall": true,
+    "direct_burst": true,
+    "poison_bloom": false
+  },
+  "inventory": {
+    "mint": 2,
+    "glass_stone": 2,
+    "wet_frog": 1,
+    "firefly": 0,
+    "dense_reed": 0,
+    "flax_seed": 0,
+    "fish_oil": 3,
+    "magic_fang": 1,
+    "healing_potion": 0,
+    "healing_recipe_scroll": 1
+  },
+  "recipe_book": {
+    "has_healing_recipe": false,
+    "learned_healing_potion": false,
+    "open": false
+  },
+  "enemies": [],
+  "drops": [],
+  "lakes": [],
+  "collectibles": [],
+  "static_obstacles": [],
+  "breakable_obstacles": [],
+  "save_points": [],
+  "checkpoint": {
+    "id": "source_glade",
+    "chapter": 9,
+    "saved_at": 1771102728608
+  },
+  "quests": {
+    "fish_oil": "0/0",
+    "bridge_elapsed": 0
+  },
+  "registration": {
+    "active": false,
+    "index": 0,
+    "score": 0
+  },
+  "skill_choice": {
+    "active": false,
+    "selected": null
+  },
+  "gacha": {
+    "wish_tokens": 40,
+    "spins": 0,
+    "last_pull": null,
+    "history": [],
+    "collection": {
+      "characters": [],
+      "weapons": {}
+    },
+    "active_banner_id": "standard_forest",
+    "menu_open": false,
+    "banner_open": false,
+    "collection_open": false,
+    "character_menu_open": false,
+    "world_map_open": false
+  },
+  "party": {
+    "leader": "Листи",
+    "members": []
+  },
+  "combat_mods": {
+    "bonus_damage": 6,
+    "dot_damage": 0,
+    "damage_reduction": 0,
+    "ally_regen": 0
+  },
+  "healer": null,
+  "source_npcs": {
+    "organizer": {
+      "x": 116,
+      "y": 96
+    },
+    "registrar": {
+      "x": 240,
+      "y": 102
+    }
+  },
+  "dialogue": null
+}

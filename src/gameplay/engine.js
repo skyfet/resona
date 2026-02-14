@@ -4256,6 +4256,7 @@ function renderGameToText() {
   const payload = {
     coordinate_system: "origin top-left; x increases right; y increases down; world units are canvas pixels on 320x180",
     mode: state.mode,
+    ui_mode: getUiMode(state),
     chapter: state.chapter,
     chapter_name: CHAPTER_NAMES[state.chapter] || "Эпилог",
     objective: state.objective,
@@ -4352,6 +4353,7 @@ function renderGameToText() {
       active_banner_id: state.gacha.activeBannerId,
       menu_open: state.ui.menuOpen,
       banner_open: state.ui.gachaOpen,
+      collection_open: state.ui.collectionOpen,
       character_menu_open: state.ui.characterMenuOpen,
       world_map_open: state.ui.worldMapOpen,
     },
