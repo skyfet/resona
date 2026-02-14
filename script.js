@@ -400,6 +400,11 @@ function round(value) {
   return Math.round(value * 10) / 10;
 }
 
+function formatStatValue(value) {
+  const rounded = round(value);
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
 function randomRange(min, max) {
   return min + Math.random() * (max - min);
 }
@@ -1514,8 +1519,8 @@ function inventoryText() {
 function refreshHud() {
   chapterNode.textContent = chapterNames[state.chapter] || "Эпилог";
   levelNode.textContent = String(state.player.level);
-  hpNode.textContent = `${state.player.hp}/${state.player.maxHp}`;
-  manaNode.textContent = `${Math.round(state.player.mana)}/${state.player.maxMana}`;
+  hpNode.textContent = `${formatStatValue(state.player.hp)}/${formatStatValue(state.player.maxHp)}`;
+  manaNode.textContent = `${formatStatValue(state.player.mana)}/${formatStatValue(state.player.maxMana)}`;
   inventoryNode.textContent = inventoryText();
   if (coinsNode) {
     coinsNode.textContent = `${state.gacha.coins}`;
@@ -3511,8 +3516,8 @@ function drawEdgeMeters() {
 
   ctx.fillStyle = "#f9f2d3";
   ctx.font = '8px "Lucida Console", "Courier New", monospace';
-  ctx.fillText(`${state.player.hp}/${state.player.maxHp}`, 8, 28);
-  const manaText = `${Math.round(state.player.mana)}/${state.player.maxMana}`;
+  ctx.fillText(`${formatStatValue(state.player.hp)}/${formatStatValue(state.player.maxHp)}`, 8, 28);
+  const manaText = `${formatStatValue(state.player.mana)}/${formatStatValue(state.player.maxMana)}`;
   ctx.fillText(manaText, WIDTH - 50, 28);
 }
 
