@@ -26,6 +26,52 @@ const HEIGHT = canvas.height;
 const STEP = 1 / 60;
 const CHECKPOINT_STORAGE_KEY = "resona_checkpoint_v1";
 const utils = window.ResonaUtils || {};
+const stateFactories = window.ResonaStateFactories || {};
+const createPlayerState = stateFactories.createPlayerState || (() => ({
+  x: 72, y: 124, vx: 0, vy: 0, dirX: 1, dirY: 0, speed: 68,
+  hp: 100, maxHp: 100, mana: 24, maxMana: 24, manaRegen: 4.5, level: 1,
+  invuln: 0, dodgeTimer: 0, dodgeCooldown: 0, basicCooldown: 0, windCooldown: 0, leafCooldown: 0,
+  bridgeSprint: 0, critChance: 0.08,
+}));
+const createWorldState = stateFactories.createWorldState || (() => ({
+  chapter: 0,
+  worldBounds: { x: 24, y: 34, w: 272, h: 134 },
+  collectibles: [], obstacles: [], breakables: [], enemies: [], drops: [], lakes: [], wolf: null,
+  savePoints: [], checkpointMeta: { id: null, chapter: null, savedAt: 0 }, gatherGoal: 3, gathered: 0,
+  lakeQuest: { fishOilGoal: 3, fishOilCollected: 0 },
+  bridgeChallenge: { active: false, elapsed: 0, sprintCooldown: 0, failures: 0, planks: [] },
+  resourceSpawner: { active: false, fireflyTimer: 1.8, reedTimer: 3.6, flaxTimer: 2.8, fireflyLimit: 0, reedLimit: 0, flaxLimit: 0, spawned: false },
+}));
+const createUiState = stateFactories.createUiState || (() => ({
+  menuOpen: false, gachaOpen: false, inventoryOpen: false, worldMapOpen: false, characterMenuOpen: false,
+  collectionOpen: false, gachaResultOpen: false, menuTab: "characters", characterSelection: 0, weaponSelection: 0, amuletSelection: 0,
+}));
+const createProgressState = stateFactories.createProgressState || (() => ({
+  flags: { grandmaTalked: false, wolfDefeated: false, leafFallUnlocked: false, healerFound: false, rescuedHealer: false, lakeQuestDone: false, bridgePassed: false, organizerTalked: false, registrationComplete: false, batsDefeated: false, skillChoiceMade: false, snoopGlassTaken: false },
+  skills: { windGust: true, leafFall: false, directBurst: false, poisonBloom: false },
+  registration: { active: false, index: 0, score: 0, questions: [
+    { q: "Вопрос 1: Что важнее у источника?", a: "A: личная выгода", b: "B: общая защита", correct: "B" },
+    { q: "Вопрос 2: При тревоге вы...", a: "A: предупреждаете всех", b: "B: уходите в укрытие", correct: "A" },
+    { q: "Вопрос 3: Работа в отряде это...", a: "A: координация и дисциплина", b: "B: каждый сам за себя", correct: "A" },
+  ]},
+  skillChoice: { active: false, selected: null }, combatMods: { bonusDamage: 0, dotDamage: 0, damageReduction: 0, allyRegen: 0 },
+  maxChapterUnlocked: 0, mapSelection: 0,
+}));
+const createEconomyState = stateFactories.createEconomyState || (() => ({
+  inventory: { mint: 0, glassStone: 0, wetFrog: 0, firefly: 0, denseReed: 0, flaxSeed: 0, fishOil: 0, magicFang: 0, healingPotion: 0, healingRecipeScroll: 0, emptyJar: 0, blackSlime: 0, amulet: 0, wolfFangBonus: "" },
+  recipeBook: { hasHealingRecipe: false, learnedHealingPotion: false, open: false },
+  gacha: { wishTokens: 3, spins: 0, lastPull: null, lastResults: [], activeBannerId: "standard_forest", collection: { characters: [], weapons: {} }, config: { currencies: [], weapons: [], characters: [], banners: [] } },
+  loadout: { characters: ["listi", "healer"], weapons: ["forest_blade", "sky_book"], amulets: ["none", "falcon_ring"], selectedCharacter: "listi", selectedWeapon: "forest_blade", selectedAmulet: "none", bonusSkillPoints: 0, lastMilestone: 0 },
+  party: { leader: "Листи", members: [] },
+}));
+const createInitialState = stateFactories.createInitialState || (() => ({
+  mode: "menu", hero: "listi", time: 0, objective: "Нажмите «Новая игра», чтобы войти в открытую долину.", hint: "-", hintTimer: 0, storyLine: "", storyLineTimer: 0, flash: 0,
+  grandma: { x: 118, y: 96, r: 11 }, door: { x: 286, y: 82, w: 12, h: 24 }, organizer: { x: 116, y: 96, r: 12 }, registrar: { x: 240, y: 102, r: 12 }, healer: { x: 248, y: 98, r: 10 }, worldDecorSeed: {}, projectiles: [], leafBursts: [], sparks: [], dialogue: null,
+  player: createPlayerState(), world: createWorldState(), ui: createUiState(), progress: createProgressState(), economy: createEconomyState(),
+}));
+const CHECKPOINT_SERIALIZED_FIELDS = stateFactories.CHECKPOINT_SERIALIZED_FIELDS || [];
+const CHECKPOINT_RUNTIME_ONLY_FIELDS = stateFactories.CHECKPOINT_RUNTIME_ONLY_FIELDS || [];
+
 
 
 const chapterNames = {
@@ -229,210 +275,59 @@ const forestDecor = {
   ],
 };
 
+const initialState = createInitialState();
 const state = {
-  mode: "menu",
-  chapter: 0,
-  hero: "listi",
-  time: 0,
-  objective: "Нажмите «Новая игра», чтобы войти в открытую долину.",
-  hint: "-",
-  hintTimer: 0,
-  storyLine: "",
-  storyLineTimer: 0,
-  flash: 0,
-  worldBounds: { x: 24, y: 34, w: 272, h: 134 },
-  flags: {
-    grandmaTalked: false,
-    wolfDefeated: false,
-    leafFallUnlocked: false,
-    healerFound: false,
-    rescuedHealer: false,
-    lakeQuestDone: false,
-    bridgePassed: false,
-    organizerTalked: false,
-    registrationComplete: false,
-    batsDefeated: false,
-    skillChoiceMade: false,
-    snoopGlassTaken: false,
-  },
-  player: {
-    x: 72,
-    y: 124,
-    vx: 0,
-    vy: 0,
-    dirX: 1,
-    dirY: 0,
-    speed: 68,
-    hp: 100,
-    maxHp: 100,
-    mana: 24,
-    maxMana: 24,
-    manaRegen: 4.5,
-    level: 1,
-    invuln: 0,
-    dodgeTimer: 0,
-    dodgeCooldown: 0,
-    basicCooldown: 0,
-    windCooldown: 0,
-    leafCooldown: 0,
-    bridgeSprint: 0,
-    critChance: 0.08,
-  },
-  skills: {
-    windGust: true,
-    leafFall: false,
-    directBurst: false,
-    poisonBloom: false,
-  },
-  grandma: { x: 118, y: 96, r: 11 },
-  door: { x: 286, y: 82, w: 12, h: 24 },
-  organizer: { x: 116, y: 96, r: 12 },
-  registrar: { x: 240, y: 102, r: 12 },
-  gatherGoal: 3,
-  gathered: 0,
-  lakeQuest: {
-    fishOilGoal: 3,
-    fishOilCollected: 0,
-  },
-  bridgeChallenge: {
-    active: false,
-    elapsed: 0,
-    sprintCooldown: 0,
-    failures: 0,
-    planks: [],
-  },
-  resourceSpawner: {
-    active: false,
-    fireflyTimer: 1.8,
-    reedTimer: 3.6,
-    flaxTimer: 2.8,
-    fireflyLimit: 0,
-    reedLimit: 0,
-    flaxLimit: 0,
-    spawned: false,
-  },
-  ui: {
-    menuOpen: false,
-    gachaOpen: false,
-    inventoryOpen: false,
-    worldMapOpen: false,
-    characterMenuOpen: false,
-    collectionOpen: false,
-    gachaResultOpen: false,
-    menuTab: "characters",
-    characterSelection: 0,
-    weaponSelection: 0,
-    amuletSelection: 0,
-  },
-  maxChapterUnlocked: 0,
-  mapSelection: 0,
-  party: {
-    leader: "Листи",
-    members: [],
-  },
-  loadout: {
-    characters: ["listi", "healer"],
-    weapons: ["forest_blade", "sky_book"],
-    amulets: ["none", "falcon_ring"],
-    selectedCharacter: "listi",
-    selectedWeapon: "forest_blade",
-    selectedAmulet: "none",
-    bonusSkillPoints: 0,
-    lastMilestone: 0,
-  },
-  savePoints: [],
-  checkpointMeta: {
-    id: null,
-    chapter: null,
-    savedAt: 0,
-  },
-  collectibles: [],
-  obstacles: [],
-  breakables: [],
-  lakes: [],
-  enemies: [],
-  drops: [],
-  inventory: {
-    mint: 0,
-    glassStone: 0,
-    wetFrog: 0,
-    firefly: 0,
-    denseReed: 0,
-    flaxSeed: 0,
-    fishOil: 0,
-    magicFang: 0,
-    healingPotion: 0,
-    healingRecipeScroll: 0,
-    emptyJar: 0,
-    blackSlime: 0,
-    amulet: 0,
-    wolfFangBonus: "",
-  },
-  recipeBook: {
-    hasHealingRecipe: false,
-    learnedHealingPotion: false,
-    open: false,
-  },
-  wolf: null,
-  healer: { x: 248, y: 98, r: 10 },
-  registration: {
-    active: false,
-    index: 0,
-    score: 0,
-    questions: [
-      {
-        q: "Вопрос 1: Что важнее у источника?",
-        a: "A: личная выгода",
-        b: "B: общая защита",
-        correct: "B",
-      },
-      {
-        q: "Вопрос 2: При тревоге вы...",
-        a: "A: предупреждаете всех",
-        b: "B: уходите в укрытие",
-        correct: "A",
-      },
-      {
-        q: "Вопрос 3: Работа в отряде это...",
-        a: "A: координация и дисциплина",
-        b: "B: каждый сам за себя",
-        correct: "A",
-      },
-    ],
-  },
-  skillChoice: {
-    active: false,
-    selected: null,
-  },
-  combatMods: {
-    bonusDamage: 0,
-    dotDamage: 0,
-    damageReduction: 0,
-    allyRegen: 0,
-  },
-  gacha: {
-    wishTokens: 3,
-    spins: 0,
-    lastPull: null,
-    lastResults: [],
-    activeBannerId: "standard_forest",
-    collection: {
-      characters: [],
-      weapons: {},
-    },
-    config: {
-      currencies: [],
-      weapons: [],
-      characters: [],
-      banners: [],
-    },
-  },
-  projectiles: [],
-  leafBursts: [],
-  sparks: [],
-  dialogue: null,
-  worldDecorSeed: {},
+  mode: initialState.mode,
+  chapter: initialState.world.chapter,
+  hero: initialState.hero,
+  time: initialState.time,
+  objective: initialState.objective,
+  hint: initialState.hint,
+  hintTimer: initialState.hintTimer,
+  storyLine: initialState.storyLine,
+  storyLineTimer: initialState.storyLineTimer,
+  flash: initialState.flash,
+  worldBounds: initialState.world.worldBounds,
+  flags: initialState.progress.flags,
+  player: initialState.player,
+  skills: initialState.progress.skills,
+  grandma: initialState.grandma,
+  door: initialState.door,
+  organizer: initialState.organizer,
+  registrar: initialState.registrar,
+  gatherGoal: initialState.world.gatherGoal,
+  gathered: initialState.world.gathered,
+  lakeQuest: initialState.world.lakeQuest,
+  bridgeChallenge: initialState.world.bridgeChallenge,
+  resourceSpawner: initialState.world.resourceSpawner,
+  ui: initialState.ui,
+  maxChapterUnlocked: initialState.progress.maxChapterUnlocked,
+  mapSelection: initialState.progress.mapSelection,
+  party: initialState.economy.party,
+  loadout: initialState.economy.loadout,
+  savePoints: initialState.world.savePoints,
+  checkpointMeta: initialState.world.checkpointMeta,
+  collectibles: initialState.world.collectibles,
+  obstacles: initialState.world.obstacles,
+  breakables: initialState.world.breakables,
+  lakes: initialState.world.lakes,
+  enemies: initialState.world.enemies,
+  drops: initialState.world.drops,
+  inventory: initialState.economy.inventory,
+  recipeBook: initialState.economy.recipeBook,
+  wolf: initialState.world.wolf,
+  healer: initialState.healer,
+  registration: initialState.progress.registration,
+  skillChoice: initialState.progress.skillChoice,
+  combatMods: initialState.progress.combatMods,
+  gacha: initialState.economy.gacha,
+  projectiles: initialState.projectiles,
+  leafBursts: initialState.leafBursts,
+  sparks: initialState.sparks,
+  dialogue: initialState.dialogue,
+  worldDecorSeed: initialState.worldDecorSeed,
 };
+
 
 canvas.setAttribute("tabindex", "0");
 ctx.imageSmoothingEnabled = false;
@@ -545,6 +440,71 @@ function deepCopy(data) {
   return JSON.parse(JSON.stringify(data));
 }
 
+function applyUiDefaults() {
+  Object.assign(state.ui, createUiState());
+}
+
+function applyProgressResets() {
+  const progress = createProgressState();
+  Object.assign(state.flags, progress.flags);
+  Object.assign(state.skills, progress.skills);
+  Object.assign(state.registration, progress.registration);
+  Object.assign(state.skillChoice, progress.skillChoice);
+  Object.assign(state.combatMods, progress.combatMods);
+  state.maxChapterUnlocked = progress.maxChapterUnlocked;
+  state.mapSelection = progress.mapSelection;
+}
+
+function applyEconomyResets() {
+  const economy = createEconomyState();
+  const currentGachaConfig = deepCopy(state.gacha.config);
+  Object.assign(state.inventory, economy.inventory);
+  Object.assign(state.recipeBook, economy.recipeBook);
+  Object.assign(state.gacha, economy.gacha);
+  state.gacha.collection = deepCopy(economy.gacha.collection);
+  state.gacha.config = currentGachaConfig;
+  Object.assign(state.loadout, economy.loadout);
+  Object.assign(state.party, economy.party);
+}
+
+function applyWorldResets() {
+  const world = createWorldState();
+  state.chapter = world.chapter;
+  state.worldBounds = deepCopy(world.worldBounds);
+  state.collectibles = world.collectibles;
+  state.obstacles = world.obstacles;
+  state.breakables = world.breakables;
+  state.enemies = world.enemies;
+  state.drops = world.drops;
+  state.lakes = world.lakes;
+  state.wolf = world.wolf;
+  state.savePoints = world.savePoints;
+  state.checkpointMeta = deepCopy(world.checkpointMeta);
+  state.gatherGoal = world.gatherGoal;
+  state.gathered = world.gathered;
+  state.lakeQuest = deepCopy(world.lakeQuest);
+  state.bridgeChallenge = deepCopy(world.bridgeChallenge);
+  state.resourceSpawner = deepCopy(world.resourceSpawner);
+}
+
+function applyRuntimeTransientResets() {
+  state.player.vx = 0;
+  state.player.vy = 0;
+  state.player.invuln = 0;
+  state.player.dodgeTimer = 0;
+  state.player.dodgeCooldown = 0;
+  state.player.basicCooldown = 0;
+  state.player.windCooldown = 0;
+  state.player.leafCooldown = 0;
+  state.hintTimer = 0;
+  state.storyLineTimer = 0;
+  state.flash = 0;
+  state.projectiles = [];
+  state.leafBursts = [];
+  state.sparks = [];
+  state.dialogue = null;
+}
+
 function withStorage(callback) {
   try {
     return callback(window.localStorage);
@@ -600,7 +560,8 @@ function markActiveSavePoint(savePointId) {
 }
 
 function buildCheckpointSnapshot(savePointId) {
-  return {
+  // Contract: serialized fields are listed in CHECKPOINT_SERIALIZED_FIELDS; transient runtime fields are listed in CHECKPOINT_RUNTIME_ONLY_FIELDS.
+  const snapshot = {
     version: 1,
     savedAt: Date.now(),
     savePointId,
@@ -653,6 +614,16 @@ function buildCheckpointSnapshot(savePointId) {
       activeBannerId: state.gacha.activeBannerId,
     },
   };
+
+  if (CHECKPOINT_SERIALIZED_FIELDS.length) {
+    for (const field of CHECKPOINT_SERIALIZED_FIELDS) {
+      if (!(field in snapshot)) {
+        console.warn(`Checkpoint contract mismatch: missing serialized field "${field}".`);
+      }
+    }
+  }
+
+  return snapshot;
 }
 
 function applyCheckpointSnapshot(snapshot, options = {}) {
@@ -744,31 +715,11 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
     state.gacha.activeBannerId = snapshot.gacha.activeBannerId ?? state.gacha.activeBannerId;
   }
 
-  state.player.vx = 0;
-  state.player.vy = 0;
+  applyRuntimeTransientResets();
   state.player.invuln = revive ? 1.2 : 0.2;
-  state.player.dodgeTimer = 0;
-  state.player.dodgeCooldown = 0;
-  state.player.basicCooldown = 0;
-  state.player.windCooldown = 0;
-  state.player.leafCooldown = 0;
-  state.projectiles = [];
-  state.leafBursts = [];
-  state.sparks = [];
-  state.dialogue = null;
   applyLoadoutStats();
   state.recipeBook.open = false;
-  state.ui.menuOpen = false;
-  state.ui.gachaOpen = false;
-  state.ui.inventoryOpen = false;
-  state.ui.worldMapOpen = false;
-  state.ui.characterMenuOpen = false;
-  state.ui.collectionOpen = false;
-  state.ui.gachaResultOpen = false;
-  state.ui.menuTab = "characters";
-  state.ui.characterSelection = 0;
-  state.ui.weaponSelection = 0;
-  state.ui.amuletSelection = 0;
+  applyUiDefaults();
 
   state.objective = snapshot.objective || state.objective;
   state.hint = snapshot.hint || "-";
@@ -1289,124 +1240,18 @@ function resetAdventureState() {
   state.time = 0;
   state.mode = "play";
   state.hint = "-";
-  state.hintTimer = 0;
   state.storyLine = "";
-  state.storyLineTimer = 0;
-  state.flash = 0;
 
-  state.flags.grandmaTalked = false;
-  state.flags.wolfDefeated = false;
-  state.flags.leafFallUnlocked = false;
-  state.flags.healerFound = false;
-  state.flags.rescuedHealer = false;
-  state.flags.lakeQuestDone = false;
-  state.flags.bridgePassed = false;
-  state.flags.organizerTalked = false;
-  state.flags.registrationComplete = false;
-  state.flags.batsDefeated = false;
-  state.flags.skillChoiceMade = false;
-  state.flags.snoopGlassTaken = false;
+  applyProgressResets();
+  applyEconomyResets();
+  applyWorldResets();
+  applyUiDefaults();
+  applyRuntimeTransientResets();
 
-  state.skills.windGust = true;
-  state.skills.leafFall = false;
-  state.skills.directBurst = false;
-  state.skills.poisonBloom = false;
-
-  state.gathered = 0;
-  state.lakeQuest.fishOilCollected = 0;
-  state.lakeQuest.fishOilGoal = 3;
-  state.bridgeChallenge.active = false;
-  state.bridgeChallenge.elapsed = 0;
-  state.bridgeChallenge.sprintCooldown = 0;
-  state.bridgeChallenge.failures = 0;
-  state.bridgeChallenge.planks = [];
-  setupAmbientSpawner(false);
-  state.ui.menuOpen = false;
-  state.ui.gachaOpen = false;
-  state.ui.inventoryOpen = false;
-  state.ui.worldMapOpen = false;
-  state.ui.characterMenuOpen = false;
-  state.ui.collectionOpen = false;
-  state.ui.gachaResultOpen = false;
-  state.savePoints = [];
-  state.checkpointMeta.id = null;
-  state.checkpointMeta.chapter = null;
-  state.checkpointMeta.savedAt = 0;
-
-  state.inventory.mint = 0;
-  state.inventory.glassStone = 0;
-  state.inventory.wetFrog = 0;
-  state.inventory.firefly = 0;
-  state.inventory.denseReed = 0;
-  state.inventory.flaxSeed = 0;
-  state.inventory.fishOil = 0;
-  state.inventory.magicFang = 0;
-  state.inventory.healingPotion = 0;
-  state.inventory.healingRecipeScroll = 0;
-  state.inventory.emptyJar = 0;
-  state.inventory.blackSlime = 0;
-  state.inventory.amulet = 0;
-  state.inventory.wolfFangBonus = "";
-
-  state.recipeBook.hasHealingRecipe = false;
-  state.recipeBook.learnedHealingPotion = false;
-  state.recipeBook.open = false;
-  state.registration.active = false;
-  state.registration.index = 0;
-  state.registration.score = 0;
-  state.skillChoice.active = false;
-  state.skillChoice.selected = null;
-  state.combatMods.bonusDamage = 0;
-  state.combatMods.dotDamage = 0;
-  state.combatMods.damageReduction = 0;
-  state.combatMods.allyRegen = 0;
-  state.gacha.wishTokens = 3;
-  state.gacha.spins = 0;
-  state.gacha.lastPull = null;
-  state.gacha.lastResults = [];
-  state.gacha.collection.characters = [];
-  state.gacha.collection.weapons = {};
-  state.gacha.activeBannerId = "standard_forest";
-  state.party.leader = "Листи";
   state.hero = "listi";
-  state.party.members = [];
-  state.loadout.selectedCharacter = "listi";
-  state.loadout.selectedWeapon = "forest_blade";
-  state.loadout.selectedAmulet = "none";
-  state.loadout.bonusSkillPoints = 0;
-  state.loadout.lastMilestone = 0;
-
-  state.player.maxHp = 100;
-  state.player.hp = state.player.maxHp;
-  state.player.mana = state.player.maxMana;
-  state.player.maxMana = 24;
-  state.player.level = 1;
-  state.player.speed = 68;
-  state.player.vx = 0;
-  state.player.vy = 0;
-  state.player.dirX = 1;
-  state.player.dirY = 0;
-  state.player.invuln = 0;
-  state.player.dodgeTimer = 0;
-  state.player.dodgeCooldown = 0;
-  state.player.basicCooldown = 0;
-  state.player.windCooldown = 0;
-  state.player.leafCooldown = 0;
-  state.player.bridgeSprint = 0;
-
-  state.collectibles = [];
-  state.obstacles = [];
-  state.breakables = [];
-  state.lakes = [];
-  state.enemies = [];
-  state.drops = [];
-  state.projectiles = [];
-  state.leafBursts = [];
-  state.sparks = [];
-  state.dialogue = null;
+  state.player = createPlayerState();
+  state.recipeBook.open = false;
   applyLoadoutStats();
-  state.maxChapterUnlocked = 0;
-  state.mapSelection = 0;
 
   gotoChapter(0);
 }
@@ -1415,21 +1260,16 @@ function gotoChapter(chapter) {
   state.chapter = chapter;
   state.maxChapterUnlocked = Math.max(state.maxChapterUnlocked || 0, chapter);
   state.mapSelection = chapter;
-  state.projectiles.length = 0;
-  state.leafBursts.length = 0;
-  state.sparks.length = 0;
-  state.dialogue = null;
-  applyLoadoutStats();
-  state.registration.active = false;
-  state.registration.index = 0;
-  state.registration.score = 0;
-  state.skillChoice.active = false;
-  state.ui.menuOpen = false;
-  state.ui.gachaOpen = false;
-  state.ui.inventoryOpen = false;
-  state.ui.worldMapOpen = false;
-  state.ui.characterMenuOpen = false;
+  applyRuntimeTransientResets();
+  applyUiDefaults();
+  const progressDefaults = createProgressState();
+  state.registration.active = progressDefaults.registration.active;
+  state.registration.index = progressDefaults.registration.index;
+  state.registration.score = progressDefaults.registration.score;
+  state.skillChoice.active = progressDefaults.skillChoice.active;
+  state.skillChoice.selected = progressDefaults.skillChoice.selected;
   state.recipeBook.open = false;
+  applyLoadoutStats();
   state.savePoints = chapterSavePoints(chapter);
   if (state.checkpointMeta.id && state.checkpointMeta.chapter === chapter) {
     markActiveSavePoint(state.checkpointMeta.id);
