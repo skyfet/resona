@@ -1,0 +1,119 @@
+[
+  {
+    "width": 1440,
+    "before": {
+      "innerWidth": 1440,
+      "scrollWidth": 1440,
+      "overflow": false
+    },
+    "after": {
+      "innerWidth": 1440,
+      "scrollWidth": 1440,
+      "overflow": false
+    }
+  },
+  {
+    "width": 1280,
+    "before": {
+      "innerWidth": 1280,
+      "scrollWidth": 1351,
+      "overflow": true
+    },
+    "after": {
+      "innerWidth": 1280,
+      "scrollWidth": 1280,
+      "overflow": false
+    }
+  },
+  {
+    "width": 1180,
+    "before": {
+      "innerWidth": 1180,
+      "scrollWidth": 1446,
+      "overflow": true
+    },
+    "after": {
+      "innerWidth": 1180,
+      "scrollWidth": 1446,
+      "overflow": true
+    }
+  },
+  {
+    "width": 1100,
+    "before": {
+      "innerWidth": 1100,
+      "scrollWidth": 1412,
+      "overflow": true
+    },
+    "after": {
+      "innerWidth": 1100,
+      "scrollWidth": 1412,
+      "overflow": true
+    }
+  },
+  {
+    "width": 1024,
+    "before": {
+      "innerWidth": 1024,
+      "scrollWidth": 1381,
+      "overflow": true
+    },
+    "after": {
+      "innerWidth": 1024,
+      "scrollWidth": 1381,
+      "overflow": true
+    }
+  },
+  {
+    "width": 900,
+    "before": {
+      "innerWidth": 900,
+      "scrollWidth": 905,
+      "overflow": true
+    },
+    "after": {
+      "innerWidth": 900,
+      "scrollWidth": 905,
+      "overflow": true
+    }
+  },
+  {
+    "width": 768,
+    "before": {
+      "innerWidth": 768,
+      "scrollWidth": 779,
+      "overflow": true
+    },
+    "after": {
+      "innerWidth": 768,
+      "scrollWidth": 779,
+      "overflow": true
+    }
+  },
+  {
+    "width": 540,
+    "before": {
+      "innerWidth": 540,
+      "scrollWidth": 554,
+      "overflow": true
+    },
+    "after": {
+      "innerWidth": 540,
+      "scrollWidth": 554,
+      "overflow": true
+    }
+  },
+  {
+    "width": 390,
+    "before": {
+      "innerWidth": 390,
+      "scrollWidth": 415,
+      "overflow": true
+    },
+    "after": {
+      "innerWidth": 390,
+      "scrollWidth": 415,
+      "overflow": true
+    }
+  }
+]

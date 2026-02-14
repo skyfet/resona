@@ -1511,8 +1511,13 @@ function toggleFullscreen() {
 
 function resizeCanvasDisplay() {
   const ratio = WIDTH / HEIGHT;
-  const widthLimit = window.innerWidth * (document.fullscreenElement ? 0.98 : 0.92);
-  const heightLimit = window.innerHeight * (document.fullscreenElement ? 0.95 : 0.72);
+  const parent = canvas.parentElement;
+  const parentWidth = parent ? parent.clientWidth : window.innerWidth;
+  const fullscreen = Boolean(document.fullscreenElement);
+  const widthLimit = fullscreen
+    ? window.innerWidth * 0.98
+    : Math.min(parentWidth, window.innerWidth * 0.92);
+  const heightLimit = window.innerHeight * (fullscreen ? 0.95 : 0.72);
   let displayWidth = widthLimit;
   let displayHeight = displayWidth / ratio;
   if (displayHeight > heightLimit) {
