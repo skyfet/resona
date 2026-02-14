@@ -56,6 +56,28 @@ const chapterMapNodes = {
 
 const worldRoute = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+const environmentSpriteSheet = new Image();
+environmentSpriteSheet.src = "assets/environment-sprites.svg";
+
+const environmentSprites = {
+  treeLarge: { x: 0, y: 0, w: 120, h: 160 },
+  treeSmall: { x: 120, y: 0, w: 96, h: 132 },
+  bush: { x: 0, y: 170, w: 120, h: 66 },
+  rock: { x: 132, y: 170, w: 76, h: 52 },
+  mushroom: { x: 216, y: 170, w: 54, h: 62 },
+  lake: { x: 278, y: 170, w: 120, h: 70 },
+  grassTile: { x: 0, y: 248, w: 128, h: 48 },
+  crystal: { x: 138, y: 248, w: 72, h: 94 },
+  herb: { x: 220, y: 248, w: 64, h: 70 },
+};
+
+function drawEnvironmentSprite(spriteKey, dx, dy, dw, dh) {
+  const sprite = environmentSprites[spriteKey];
+  if (!sprite || !environmentSpriteSheet.complete) return false;
+  ctx.drawImage(environmentSpriteSheet, sprite.x, sprite.y, sprite.w, sprite.h, dx, dy, dw, dh);
+  return true;
+}
+
 const keysDown = new Set();
 const keysPressed = new Set();
 
@@ -3189,6 +3211,14 @@ function update(dt) {
 }
 
 function drawTree(x, y, scale = 1) {
+  const spriteKey = scale > 1.25 ? "treeLarge" : "treeSmall";
+  const sprite = environmentSprites[spriteKey];
+  if (sprite && environmentSpriteSheet.complete) {
+    const width = Math.round(sprite.w * scale * 0.42);
+    const height = Math.round(sprite.h * scale * 0.42);
+    if (drawEnvironmentSprite(spriteKey, Math.round(x - width / 2), Math.round(y - height + 8), width, height)) return;
+  }
+
   const trunkW = Math.round(4 * scale);
   const trunkH = Math.round(6 * scale);
   const crownW = Math.round(12 * scale);
@@ -3346,6 +3376,7 @@ function drawCollectibles() {
     }
 
     if (item.type === "dense_reed") {
+      if (drawEnvironmentSprite("herb", x - 8, y - 12, 16, 16)) continue;
       ctx.fillStyle = "#74b45b";
       ctx.fillRect(x - 2, y - 5, 1, 6);
       ctx.fillRect(x, y - 6, 1, 7);
@@ -3371,6 +3402,28 @@ function drawCollectibles() {
 
 function drawObstacles() {
   for (const obstacle of state.obstacles) {
+    if (environmentSpriteSheet.complete) {
+      const isRock = obstacle.id && obstacle.id.includes("rock");
+      const isBush = obstacle.id && obstacle.id.includes("bush");
+      const isMush = obstacle.id && obstacle.id.includes("mush");
+      if (isRock || isBush || isMush) {
+        const spriteKey = isRock ? "rock" : isBush ? "bush" : "mushroom";
+        const sprite = environmentSprites[spriteKey];
+        const spriteScale = isBush ? 0.42 : isMush ? 0.5 : 0.45;
+        const drawW = Math.max(obstacle.w + 10, Math.round(sprite.w * spriteScale));
+        const drawH = Math.max(obstacle.h + 8, Math.round(sprite.h * spriteScale));
+        if (drawEnvironmentSprite(
+          spriteKey,
+          Math.round(obstacle.x + obstacle.w / 2 - drawW / 2),
+          Math.round(obstacle.y + obstacle.h - drawH),
+          drawW,
+          drawH
+        )) {
+          continue;
+        }
+      }
+    }
+
     ctx.fillStyle = obstacle.colorDark || "#3f3f3f";
     ctx.fillRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h);
     ctx.fillStyle = obstacle.colorLight || "#666";
@@ -3394,6 +3447,12 @@ function drawSavePoints() {
     const y = Math.round(point.y);
     const active = Boolean(point.activated);
 
+    if (drawEnvironmentSprite("crystal", x - 10, y - 16, 20, 28)) {
+      ctx.fillStyle = active ? "rgba(126, 245, 255, 0.24)" : "rgba(106, 199, 223, 0.15)";
+      ctx.fillRect(x - 12, y - 2, 24, 10);
+      continue;
+    }
+
     ctx.fillStyle = active ? "#7ef5ff" : "#6ac7df";
     ctx.fillRect(x - 2, y - 8, 4, 8);
     ctx.fillStyle = active ? "#c7fbff" : "#9adbe8";
@@ -3405,6 +3464,12 @@ function drawSavePoints() {
 
 function drawLakes() {
   for (const lake of state.lakes) {
+    if (environmentSpriteSheet.complete) {
+      const drawW = Math.round(lake.r * 2.4);
+      const drawH = Math.round(lake.r * 1.6);
+      if (drawEnvironmentSprite("lake", Math.round(lake.x - drawW / 2), Math.round(lake.y - drawH / 2), drawW, drawH)) continue;
+    }
+
     ctx.fillStyle = "rgba(66, 114, 144, 0.72)";
     ctx.beginPath();
     ctx.arc(lake.x, lake.y, lake.r, 0, Math.PI * 2);
@@ -3586,6 +3651,13 @@ function drawForestBackground(chapter) {
 
   ctx.fillStyle = isMushroomLane ? "#3a5b46" : "#356a4a";
   ctx.fillRect(0, 22, WIDTH, 136);
+
+  if (environmentSpriteSheet.complete) {
+    for (let x = 0; x < WIDTH; x += 48) {
+      drawEnvironmentSprite("grassTile", x, 20, 48, 20);
+      drawEnvironmentSprite("grassTile", x, HEIGHT - 22, 48, 20);
+    }
+  }
 
   ctx.fillStyle = pathTone;
   ctx.fillRect(0, 78, WIDTH, 28);
