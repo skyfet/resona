@@ -36,6 +36,19 @@ const chapterNames = {
   9: "Путь защитницы",
 };
 
+const chapterMapNodes = {
+  0: { name: "Дом", x: 40, y: 112, status: "safe" },
+  1: { name: "Деревня", x: 70, y: 92, status: "safe" },
+  2: { name: "Тропа", x: 102, y: 78, status: "travel" },
+  3: { name: "Волк", x: 132, y: 86, status: "danger" },
+  4: { name: "Чаща", x: 162, y: 98, status: "danger" },
+  5: { name: "Озёра", x: 194, y: 88, status: "danger" },
+  6: { name: "Мост", x: 222, y: 76, status: "travel" },
+  7: { name: "Аллея", x: 252, y: 88, status: "quest" },
+  8: { name: "Оборона", x: 280, y: 98, status: "danger" },
+  9: { name: "Штаб", x: 294, y: 116, status: "quest" },
+};
+
 const keysDown = new Set();
 const keysPressed = new Set();
 
@@ -263,6 +276,12 @@ const state = {
     menuOpen: false,
     gachaOpen: false,
     inventoryOpen: false,
+    worldMapOpen: false,
+    characterMenuOpen: false,
+  },
+  party: {
+    leader: "Листи",
+    members: [],
   },
   savePoints: [],
   checkpointMeta: {
@@ -565,6 +584,12 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   Object.assign(state.combatMods, snapshot.combatMods || {});
   Object.assign(state.ui, snapshot.ui || {});
   if (typeof state.ui.inventoryOpen !== "boolean") state.ui.inventoryOpen = false;
+  if (typeof state.ui.worldMapOpen !== "boolean") state.ui.worldMapOpen = false;
+  if (typeof state.ui.characterMenuOpen !== "boolean") state.ui.characterMenuOpen = false;
+  if (!state.party || typeof state.party !== "object") {
+    state.party = { leader: "Листи", members: [] };
+  }
+  if (!Array.isArray(state.party.members)) state.party.members = [];
   Object.assign(state.inventory, snapshot.inventory || {});
   Object.assign(state.recipeBook, snapshot.recipeBook || {});
 
@@ -627,6 +652,8 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   state.ui.menuOpen = false;
   state.ui.gachaOpen = false;
   state.ui.inventoryOpen = false;
+  state.ui.worldMapOpen = false;
+  state.ui.characterMenuOpen = false;
 
   state.objective = snapshot.objective || state.objective;
   state.hint = snapshot.hint || "-";
@@ -740,6 +767,10 @@ function pickBannerReward() {
 function applyBannerReward(entry) {
   const ownedBefore = state.gacha.owned[entry.id] || 0;
   state.gacha.owned[entry.id] = ownedBefore + 1;
+
+  if (entry.type === "character" && ownedBefore === 0 && !state.party.members.includes(entry.name)) {
+    state.party.members.push(entry.name);
+  }
 
   if (ownedBefore > 0) {
     state.gacha.coins += 1;
@@ -1125,6 +1156,8 @@ function resetAdventureState() {
   state.ui.menuOpen = false;
   state.ui.gachaOpen = false;
   state.ui.inventoryOpen = false;
+  state.ui.worldMapOpen = false;
+  state.ui.characterMenuOpen = false;
   state.savePoints = [];
   state.checkpointMeta.id = null;
   state.checkpointMeta.chapter = null;
@@ -1157,6 +1190,8 @@ function resetAdventureState() {
   state.gacha.spins = 0;
   state.gacha.lastPull = null;
   state.gacha.owned = {};
+  state.party.leader = "Листи";
+  state.party.members = [];
 
   state.player.maxHp = 100;
   state.player.hp = state.player.maxHp;
@@ -1203,6 +1238,8 @@ function gotoChapter(chapter) {
   state.ui.menuOpen = false;
   state.ui.gachaOpen = false;
   state.ui.inventoryOpen = false;
+  state.ui.worldMapOpen = false;
+  state.ui.characterMenuOpen = false;
   state.recipeBook.open = false;
   state.savePoints = chapterSavePoints(chapter);
   if (state.checkpointMeta.id && state.checkpointMeta.chapter === chapter) {
@@ -1560,16 +1597,41 @@ function checkGlobalKeys() {
     if (!state.ui.menuOpen) {
       state.ui.gachaOpen = false;
       state.ui.inventoryOpen = false;
+      state.ui.worldMapOpen = false;
+      state.ui.characterMenuOpen = false;
     } else {
-      setHint("Меню открыто: G — баннер, A/B — крутки, I — вкладка багажа.", 2.8);
+      setHint("Меню открыто: G — баннер, C — персонажи, A/B — крутки.", 2.8);
     }
   }
   if (consumeKey(["KeyI"]) && state.mode !== "menu") {
     state.ui.inventoryOpen = !state.ui.inventoryOpen;
+    if (state.ui.inventoryOpen) {
+      state.ui.worldMapOpen = false;
+      state.ui.characterMenuOpen = false;
+    }
+  }
+  if (consumeKey(["Tab"]) && state.mode !== "menu") {
+    state.ui.worldMapOpen = !state.ui.worldMapOpen;
+    if (state.ui.worldMapOpen) {
+      state.ui.inventoryOpen = false;
+      state.ui.characterMenuOpen = false;
+      setHint("Карта: Tab — закрыть, активная глава подсвечена.", 2.2);
+    }
+  }
+  if (state.ui.menuOpen && consumeKey(["KeyC"])) {
+    state.ui.characterMenuOpen = !state.ui.characterMenuOpen;
+    if (state.ui.characterMenuOpen) {
+      state.ui.gachaOpen = false;
+      setHint("Меню персонажей: выбранные союзники усиливают отряд.", 2.4);
+    }
   }
   if (consumeKey(["Escape"])) {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
+    } else if (state.ui.worldMapOpen) {
+      state.ui.worldMapOpen = false;
+    } else if (state.ui.characterMenuOpen) {
+      state.ui.characterMenuOpen = false;
     } else if (state.ui.gachaOpen) {
       state.ui.gachaOpen = false;
     } else if (state.ui.menuOpen) {
@@ -1578,6 +1640,9 @@ function checkGlobalKeys() {
   }
   if (state.ui.menuOpen && consumeKey(["KeyG"])) {
     state.ui.gachaOpen = !state.ui.gachaOpen;
+    if (state.ui.gachaOpen) {
+      state.ui.characterMenuOpen = false;
+    }
   }
 
   if (
@@ -2732,7 +2797,7 @@ function update(dt) {
   if (state.mode === "menu") return;
 
 
-  if (state.ui.inventoryOpen) {
+  if (state.ui.inventoryOpen || state.ui.worldMapOpen || state.ui.characterMenuOpen) {
     return;
   }
 
@@ -3415,9 +3480,9 @@ function drawPauseMenuPanel() {
   ctx.fillText("M: закрыть", 62, 58);
   ctx.fillText(`Валюта: ${state.gacha.coins}`, 62, 70);
   ctx.fillText("G: открыть баннер", 62, 82);
-  ctx.fillText("A: крутка x1", 62, 94);
-  ctx.fillText("B: крутка x5", 62, 106);
-  ctx.fillText("SSR: Травница | SR: Книжка, Амулет", 62, 122);
+  ctx.fillText("C: меню персонажей", 62, 94);
+  ctx.fillText("A: крутка x1", 62, 106);
+  ctx.fillText("B: крутка x5", 62, 118);
 
   if (state.ui.gachaOpen) {
     drawGachaBannerPanel();
@@ -3578,6 +3643,67 @@ function drawInventoryPanel() {
   rows.forEach((line, i) => ctx.fillText(line, 30, 54 + i * 11));
 }
 
+function drawWorldMapPanel() {
+  if (!state.ui.worldMapOpen) return;
+  ctx.fillStyle = "rgba(10, 17, 18, 0.9)";
+  ctx.fillRect(16, 18, 288, 144);
+  ctx.strokeStyle = "#9ec8b8";
+  ctx.strokeRect(16.5, 18.5, 287, 143);
+  ctx.fillStyle = "#d8f1e8";
+  ctx.font = '9px "Lucida Console", "Courier New", monospace';
+  ctx.fillText("Карта региона (Tab — закрыть)", 24, 34);
+
+  for (let chapter = 0; chapter <= 9; chapter += 1) {
+    const node = chapterMapNodes[chapter];
+    if (!node) continue;
+    const unlocked = chapter <= state.chapter;
+    const isCurrent = chapter === state.chapter;
+    let color = "#5a6f65";
+    if (node.status === "danger") color = "#a75c5c";
+    if (node.status === "quest") color = "#9a7ebd";
+    if (node.status === "travel") color = "#75a98a";
+    if (!unlocked) color = "#3f4a45";
+    if (isCurrent) color = "#f2d37d";
+
+    ctx.fillStyle = color;
+    ctx.fillRect(node.x - 2, node.y - 2, 5, 5);
+    ctx.fillStyle = unlocked ? "#d7ead8" : "#738179";
+    ctx.font = '7px "Lucida Console", "Courier New", monospace';
+    ctx.fillText(node.name, node.x - 10, node.y - 6);
+
+    if (chapter > 0) {
+      const prev = chapterMapNodes[chapter - 1];
+      ctx.strokeStyle = unlocked ? "#72998b" : "#495752";
+      ctx.beginPath();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(node.x, node.y);
+      ctx.stroke();
+    }
+  }
+
+  ctx.fillStyle = "#bcd8c7";
+  ctx.font = '7px "Lucida Console", "Courier New", monospace';
+  ctx.fillText("Жёлтый: текущая глава | Тёмный: закрыто", 24, 152);
+}
+
+function drawCharacterMenuPanel() {
+  if (!state.ui.characterMenuOpen) return;
+  ctx.fillStyle = "rgba(26, 19, 14, 0.92)";
+  ctx.fillRect(56, 82, 208, 90);
+  ctx.strokeStyle = "#d5c18f";
+  ctx.strokeRect(56.5, 82.5, 207, 89);
+  ctx.fillStyle = "#f3e6c3";
+  ctx.font = '8px "Lucida Console", "Courier New", monospace';
+  ctx.fillText("Меню персонажей", 64, 96);
+  ctx.fillText(`Лидер: ${state.party.leader}`, 64, 108);
+  const members = state.party.members.length ? state.party.members.join(", ") : "пока нет";
+  ctx.fillText(`Союзники: ${ellipsizeText(members, 184)}`, 64, 120);
+  ctx.fillText(`Реген: +${formatStatValue(state.combatMods.allyRegen)}/с`, 64, 132);
+  ctx.fillText(`Сопр. урону: ${Math.round(state.combatMods.damageReduction * 100)}%`, 64, 144);
+  ctx.fillText("C — закрыть, G — перейти к баннеру", 64, 158);
+}
+
+
 function drawVictoryPanel() {
   if (state.mode !== "victory" && state.chapter !== 9) return;
 
@@ -3651,7 +3777,9 @@ function renderScene() {
   }
   drawRecipeBookPanel();
   drawPauseMenuPanel();
+  drawCharacterMenuPanel();
   drawInventoryPanel();
+  drawWorldMapPanel();
   drawEdgeMeters();
 
   if (state.flash > 0) {
@@ -3838,6 +3966,12 @@ function renderGameToText() {
       owned: state.gacha.owned,
       menu_open: state.ui.menuOpen,
       banner_open: state.ui.gachaOpen,
+      character_menu_open: state.ui.characterMenuOpen,
+      world_map_open: state.ui.worldMapOpen,
+    },
+    party: {
+      leader: state.party.leader,
+      members: state.party.members,
     },
     combat_mods: {
       bonus_damage: state.combatMods.bonusDamage,
@@ -3894,7 +4028,7 @@ window.addEventListener("keydown", (event) => {
     }
   }
 
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Enter"].includes(event.code)) {
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Enter", "Tab"].includes(event.code)) {
     event.preventDefault();
   }
 });
