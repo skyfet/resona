@@ -62,11 +62,17 @@ environmentSpriteSheet.src = "assets/environment-sprites.svg";
 const environmentSprites = {
   treeLarge: { x: 0, y: 0, w: 120, h: 160 },
   treeSmall: { x: 120, y: 0, w: 96, h: 132 },
+  skyCloud: { x: 216, y: 0, w: 140, h: 72 },
+  hutSmall: { x: 360, y: 0, w: 132, h: 106 },
+  hutLarge: { x: 500, y: 0, w: 196, h: 132 },
   bush: { x: 0, y: 170, w: 120, h: 66 },
   rock: { x: 132, y: 170, w: 76, h: 52 },
   mushroom: { x: 216, y: 170, w: 54, h: 62 },
   lake: { x: 278, y: 170, w: 120, h: 70 },
+  platform: { x: 404, y: 170, w: 172, h: 66 },
   grassTile: { x: 0, y: 248, w: 128, h: 48 },
+  grassPatch: { x: 292, y: 248, w: 96, h: 60 },
+  waterPond: { x: 398, y: 248, w: 120, h: 74 },
   crystal: { x: 138, y: 248, w: 72, h: 94 },
   herb: { x: 220, y: 248, w: 64, h: 70 },
 };
@@ -3569,12 +3575,27 @@ function drawSparks() {
   }
 }
 
+function drawSpriteRow(spriteKey, y, spacing, startX = 0, drawW = 48, drawH = 20) {
+  if (!environmentSpriteSheet.complete) return;
+  for (let x = startX; x < WIDTH + spacing; x += spacing) {
+    drawEnvironmentSprite(spriteKey, x, y, drawW, drawH);
+  }
+}
+
 function drawHouseBackground() {
   ctx.fillStyle = "#6f5a43";
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
   ctx.fillStyle = "#8f7659";
   ctx.fillRect(20, 30, 280, 140);
+
+  if (environmentSpriteSheet.complete) {
+    drawEnvironmentSprite("hutLarge", 74, 40, 178, 118);
+    drawEnvironmentSprite("bush", 30, 124, 56, 30);
+    drawEnvironmentSprite("bush", 246, 126, 52, 28);
+    drawEnvironmentSprite("rock", 252, 136, 34, 24);
+    drawEnvironmentSprite("herb", 34, 132, 18, 20);
+  }
 
   ctx.fillStyle = "#4a3a2c";
   ctx.fillRect(20, 30, 280, 8);
@@ -3604,16 +3625,27 @@ function drawVillageBackground() {
   ctx.fillStyle = "#ad956e";
   ctx.fillRect(0, 80, WIDTH, 26);
 
-  const houseXs = [34, 92, 156, 218, 276];
-  for (const x of houseXs) {
-    ctx.fillStyle = "#6e4b33";
-    ctx.fillRect(x - 10, 52, 20, 20);
-    ctx.fillStyle = "#8f6744";
-    ctx.fillRect(x - 8, 54, 16, 16);
-    ctx.fillStyle = "#52341f";
-    ctx.fillRect(x - 12, 46, 24, 6);
-    ctx.fillStyle = "#ffcb77";
-    ctx.fillRect(x - 2, 60, 4, 6);
+  if (environmentSpriteSheet.complete) {
+    drawEnvironmentSprite("skyCloud", 18, 8, 70, 32);
+    drawEnvironmentSprite("skyCloud", 126, 4, 82, 36);
+    drawEnvironmentSprite("skyCloud", 238, 10, 72, 32);
+
+    const houseXs = [8, 66, 132, 196, 256];
+    for (const x of houseXs) {
+      drawEnvironmentSprite("hutSmall", x, 38, 62, 48);
+    }
+  } else {
+    const houseXs = [34, 92, 156, 218, 276];
+    for (const x of houseXs) {
+      ctx.fillStyle = "#6e4b33";
+      ctx.fillRect(x - 10, 52, 20, 20);
+      ctx.fillStyle = "#8f6744";
+      ctx.fillRect(x - 8, 54, 16, 16);
+      ctx.fillStyle = "#52341f";
+      ctx.fillRect(x - 12, 46, 24, 6);
+      ctx.fillStyle = "#ffcb77";
+      ctx.fillRect(x - 2, 60, 4, 6);
+    }
   }
 
   const villagerXs = [66, 132, 196, 252];
@@ -3652,15 +3684,17 @@ function drawForestBackground(chapter) {
   ctx.fillStyle = isMushroomLane ? "#3a5b46" : "#356a4a";
   ctx.fillRect(0, 22, WIDTH, 136);
 
-  if (environmentSpriteSheet.complete) {
-    for (let x = 0; x < WIDTH; x += 48) {
-      drawEnvironmentSprite("grassTile", x, 20, 48, 20);
-      drawEnvironmentSprite("grassTile", x, HEIGHT - 22, 48, 20);
-    }
-  }
+  drawSpriteRow("grassTile", 20, 48, 0, 48, 20);
+  drawSpriteRow("grassTile", HEIGHT - 22, 48, 0, 48, 20);
 
   ctx.fillStyle = pathTone;
   ctx.fillRect(0, 78, WIDTH, 28);
+
+  if (environmentSpriteSheet.complete) {
+    drawEnvironmentSprite("platform", 0, 70, 76, 34);
+    drawEnvironmentSprite("platform", 244, 70, 76, 34);
+    drawEnvironmentSprite("grassPatch", 112, 100, 94, 42);
+  }
 
   if (chapter === 4) {
     ctx.fillStyle = "#85724f";
@@ -3673,6 +3707,10 @@ function drawForestBackground(chapter) {
 
   if (chapter === 5) {
     drawLakes();
+    if (environmentSpriteSheet.complete) {
+      drawEnvironmentSprite("waterPond", 14, 112, 66, 38);
+      drawEnvironmentSprite("waterPond", 238, 112, 66, 38);
+    }
   }
 
   if (isMushroomLane) {
