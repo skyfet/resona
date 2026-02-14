@@ -10,8 +10,22 @@
     <main class="layout" aria-label="Resona forest quest">
       <section id="menu" class="menu" aria-label="Main menu">
         <h1>Resona: Лесной Источник</h1>
-        <p>Пиксельное приключение: дом, лес, озёра, старый мост, грибная аллея и защита магического источника.</p>
-        <div class="controls" aria-label="Controls">
+        <p class="menu-subtitle">Пиксельное приключение: дом, лес, озёра, старый мост, грибная аллея и защита магического источника.</p>
+        <p class="menu-tip">Выберите пункт меню мышкой или клавишами ↑ / ↓ и Enter.</p>
+
+        <div class="menu-actions" role="group" aria-label="Запуск игры">
+          <button id="start-btn" type="button">Новая игра</button>
+          <button id="continue-btn" type="button" hidden>Продолжить с точки сохранения</button>
+          <button id="help-btn" type="button" class="menu-secondary">Как играть</button>
+          <button id="lore-btn" type="button" class="menu-secondary">О мире игры</button>
+        </div>
+
+        <div class="menu-panel" aria-live="polite">
+          <p id="menu-panel-title" class="menu-panel-title">Добро пожаловать в Resona</p>
+          <p id="menu-panel-text">Начните новую игру и пройдите путь от дома эльфийки до защиты магического источника.</p>
+        </div>
+
+        <div id="controls-panel" class="controls" aria-label="Controls" hidden>
           <p>Движение: WASD / стрелки</p>
           <p>Взаимодействие: E / Enter</p>
           <p>Сохранение: E у кристалла</p>
@@ -27,10 +41,6 @@
           <p>Гача-баннер: G (в меню), крутки A/B</p>
           <p>Полный экран: F</p>
         </div>
-        <div class="menu-actions">
-          <button id="start-btn" type="button">Новая игра</button>
-          <button id="continue-btn" type="button" hidden>Продолжить с точки сохранения</button>
-        </div>
       </section>
 
       <section class="stage">
@@ -44,7 +54,7 @@
         <p><span>MP:</span> <strong id="mana-label">24/24</strong></p>
         <p><span>Валюта:</span> <strong id="coins-label">0</strong></p>
         <p><span>Рюкзак:</span> <strong id="inventory-label">пусто</strong></p>
-        <p><span>Цель:</span> <strong id="objective">Нажмите «Начать путь»</strong></p>
+        <p><span>Цель:</span> <strong id="objective">Нажмите «Новая игра»</strong></p>
         <p><span>Подсказка:</span> <strong id="hint">-</strong></p>
       </section>
     </main>

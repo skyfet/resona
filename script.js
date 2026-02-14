@@ -3,6 +3,11 @@ const ctx = canvas.getContext("2d", { alpha: false });
 const menuNode = document.querySelector("#menu");
 const startBtn = document.querySelector("#start-btn");
 const continueBtn = document.querySelector("#continue-btn");
+const helpBtn = document.querySelector("#help-btn");
+const loreBtn = document.querySelector("#lore-btn");
+const controlsPanel = document.querySelector("#controls-panel");
+const menuPanelTitle = document.querySelector("#menu-panel-title");
+const menuPanelText = document.querySelector("#menu-panel-text");
 
 const chapterNode = document.querySelector("#chapter-label");
 const levelNode = document.querySelector("#level-label");
@@ -33,6 +38,42 @@ const chapterNames = {
 
 const keysDown = new Set();
 const keysPressed = new Set();
+
+const menuEntries = [
+  {
+    id: "start",
+    button: startBtn,
+    title: "Новая игра",
+    text: "Начать путь заново: пролог у дома бабушки, базовые задания и постепенное открытие умений.",
+    action: () => startGame(),
+  },
+  {
+    id: "continue",
+    button: continueBtn,
+    title: "Продолжить",
+    text: "Загрузить последнее сохранение от кристалла и вернуться в нужную главу.",
+    action: () => continueFromStoredCheckpoint(),
+    hidden: () => !readStoredCheckpoint(),
+  },
+  {
+    id: "help",
+    button: helpBtn,
+    title: "Как играть",
+    text: "Управление, боевая система и быстрые подсказки по выживанию в лесу.",
+    action: () => showControlsPanel(),
+  },
+  {
+    id: "lore",
+    button: loreBtn,
+    title: "О мире игры",
+    text: "Вы — эльфийка-защитница. Источник теряет силу, и вам нужно собрать команду, пройти испытания и остановить угрозу.",
+    action: () => showLorePanel(),
+  },
+];
+
+const menuState = {
+  selectedIndex: 0,
+};
 
 const forestDecor = {
   2: [
@@ -430,6 +471,7 @@ function readStoredCheckpoint() {
 function updateContinueButtonVisibility() {
   if (!continueBtn) return;
   continueBtn.hidden = !readStoredCheckpoint();
+  updateMenuFocus();
 }
 
 function markActiveSavePoint(savePointId) {
@@ -633,6 +675,7 @@ function continueFromStoredCheckpoint() {
   }
   setHint("Прогресс восстановлен.", 2.2);
   setStoryLine("Эльфийка продолжает путь с точки сохранения.", 2.4);
+  if (controlsPanel) controlsPanel.hidden = true;
   return true;
 }
 
@@ -1337,8 +1380,97 @@ function gotoChapter(chapter) {
   }
 }
 
+function visibleMenuEntries() {
+  return menuEntries.filter((entry) => !entry.hidden || !entry.hidden());
+}
+
+function setMenuPanel(title, text) {
+  if (menuPanelTitle) menuPanelTitle.textContent = title;
+  if (menuPanelText) menuPanelText.textContent = text;
+}
+
+function updateMenuFocus() {
+  const visible = visibleMenuEntries();
+  if (!visible.length) return;
+
+  if (menuState.selectedIndex >= visible.length) {
+    menuState.selectedIndex = 0;
+  }
+
+  for (const entry of menuEntries) {
+    if (!entry.button) continue;
+    entry.button.classList.remove("is-focused");
+    entry.button.tabIndex = -1;
+  }
+
+  const selected = visible[menuState.selectedIndex];
+  if (!selected || !selected.button) return;
+  selected.button.classList.add("is-focused");
+  selected.button.tabIndex = 0;
+  setMenuPanel(selected.title, selected.text);
+}
+
+function moveMenuSelection(direction) {
+  const visible = visibleMenuEntries();
+  if (!visible.length) return;
+  menuState.selectedIndex = (menuState.selectedIndex + direction + visible.length) % visible.length;
+  updateMenuFocus();
+}
+
+function runSelectedMenuAction() {
+  const visible = visibleMenuEntries();
+  const selected = visible[menuState.selectedIndex];
+  if (selected && typeof selected.action === "function") {
+    selected.action();
+  }
+}
+
+function showControlsPanel() {
+  if (controlsPanel) controlsPanel.hidden = false;
+  setMenuPanel(
+    "Как играть",
+    "Совет: начните с разговора с бабушкой (E), следите за маной и чаще активируйте кристаллы сохранения.",
+  );
+}
+
+function showLorePanel() {
+  if (controlsPanel) controlsPanel.hidden = true;
+  setMenuPanel(
+    "О мире игры",
+    "Лесной источник питает окрестности. Вам предстоит отразить атаки, помочь жителям и вступить в отряд защитников.",
+  );
+}
+
+function setupMenuInteractions() {
+  for (const entry of menuEntries) {
+    if (!entry.button) continue;
+    entry.button.addEventListener("mouseenter", () => {
+      const visible = visibleMenuEntries();
+      const visibleIndex = visible.findIndex((item) => item.id === entry.id);
+      if (visibleIndex >= 0) {
+        menuState.selectedIndex = visibleIndex;
+        updateMenuFocus();
+      }
+    });
+    entry.button.addEventListener("focus", () => {
+      const visible = visibleMenuEntries();
+      const visibleIndex = visible.findIndex((item) => item.id === entry.id);
+      if (visibleIndex >= 0) {
+        menuState.selectedIndex = visibleIndex;
+        updateMenuFocus();
+      }
+    });
+    entry.button.addEventListener("click", entry.action);
+  }
+
+  showLorePanel();
+  updateContinueButtonVisibility();
+  updateMenuFocus();
+}
+
 function startGame() {
   menuNode.classList.add("hidden");
+  if (controlsPanel) controlsPanel.hidden = true;
   resetAdventureState();
   canvas.focus();
 }
@@ -3645,8 +3777,16 @@ window.addEventListener("keydown", (event) => {
   }
   keysDown.add(event.code);
 
-  if (event.code === "Enter" && state.mode === "menu") {
-    startGame();
+  if (state.mode === "menu") {
+    if (event.code === "ArrowUp") {
+      moveMenuSelection(-1);
+    }
+    if (event.code === "ArrowDown") {
+      moveMenuSelection(1);
+    }
+    if (event.code === "Enter") {
+      runSelectedMenuAction();
+    }
   }
 
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Enter"].includes(event.code)) {
@@ -3660,17 +3800,12 @@ window.addEventListener("keyup", (event) => {
 
 window.addEventListener("resize", resizeCanvasDisplay);
 document.addEventListener("fullscreenchange", resizeCanvasDisplay);
-startBtn.addEventListener("click", startGame);
-if (continueBtn) {
-  continueBtn.addEventListener("click", continueFromStoredCheckpoint);
-}
-
 function boot() {
   gotoChapter(0);
   state.mode = "menu";
-  state.objective = "Нажмите «Начать путь»";
-  state.hint = "После старта подойдите к бабушке и нажмите E.";
-  updateContinueButtonVisibility();
+  state.objective = "Выберите пункт в главном меню";
+  state.hint = "Начните игру или откройте раздел «Как играть».";
+  setupMenuInteractions();
   resizeCanvasDisplay();
   refreshHud();
   requestAnimationFrame(updateFrame);

@@ -58,6 +58,15 @@ body {
   margin: 0;
 }
 
+.menu-subtitle {
+  color: #3d2a1a;
+}
+
+.menu-tip {
+  font-size: 0.8rem;
+  color: #6f5237;
+}
+
 .controls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -72,6 +81,29 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
+}
+
+.menu-panel {
+  border: 2px solid #8e6b47;
+  background: #fff7df;
+  padding: 0.55rem;
+  min-height: 4.8rem;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.menu-panel-title {
+  font-size: 0.86rem;
+  color: #6f4a2d;
+}
+
+.menu-secondary {
+  background: linear-gradient(180deg, #f2f2f2, #cfcfcf);
+}
+
+.menu-actions button.is-focused {
+  outline: 2px dashed #2f6e45;
+  outline-offset: 2px;
 }
 
 #start-btn,
@@ -140,6 +172,10 @@ body {
 
   .menu-actions {
     flex-direction: column;
+  }
+
+  .menu-panel {
+    min-height: 5.6rem;
   }
 
   #start-btn,
