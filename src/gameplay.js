@@ -1,3 +1,9 @@
+import { CHAPTER_NAMES, CHAPTER_MAP_NODES, WORLD_ROUTE, getChapterSavePoints } from "./chapter-config.js";
+import { UI_MODES, setUiMode, getUiMode } from "./ui-mode.js";
+import { ACTIONS, consumeAction, getModePriority } from "./action-map.js";
+import { createCheckpointSnapshotFromState, deserializeCheckpoint, serializeCheckpoint } from "./checkpoint-schema.js";
+import { registerTestBridge, advanceTime as advanceTimeBridge } from "./test-bridge.js";
+
 const {
   canvas,
   ctx,
@@ -28,34 +34,6 @@ const {
 } = window.__resonaBoot;
 
 
-const chapterNames = {
-  0: "Единая долина • Дом",
-  1: "Единая долина • Поселение",
-  2: "Единая долина • Лесная тропа",
-  3: "Единая долина • Логово волка",
-  4: "Единая долина • Чаща травницы",
-  5: "Единая долина • Озёрный край",
-  6: "Единая долина • Старый мост",
-  7: "Единая долина • Площадь Снупа",
-  8: "Единая долина • Налёт летучих мышей",
-  9: "Единая долина • Источник",
-};
-
-const chapterMapNodes = {
-  0: { name: "Дом", x: 40, y: 112, status: "safe" },
-  1: { name: "Деревня", x: 70, y: 92, status: "safe" },
-  2: { name: "Тропа", x: 102, y: 78, status: "travel" },
-  3: { name: "Волк", x: 132, y: 86, status: "danger" },
-  4: { name: "Чаща", x: 162, y: 98, status: "danger" },
-  5: { name: "Озёра", x: 194, y: 88, status: "danger" },
-  6: { name: "Мост", x: 222, y: 76, status: "travel" },
-  7: { name: "Аллея", x: 252, y: 88, status: "quest" },
-  8: { name: "Оборона", x: 280, y: 98, status: "danger" },
-  9: { name: "Штаб", x: 294, y: 116, status: "quest" },
-};
-
-
-const worldRoute = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 const environmentSpriteSheet = new Image();
 environmentSpriteSheet.src = "assets/environment-sprites.svg";
@@ -312,6 +290,8 @@ export const state = {
     spawned: false,
   },
   ui: {
+    mode: UI_MODES.GAMEPLAY,
+    overlay: null,
     menuOpen: false,
     gachaOpen: false,
     inventoryOpen: false,
@@ -570,20 +550,7 @@ export async function loadGachaConfig() {
 
 export function readStoredCheckpoint() {
   const raw = withStorage((storage) => storage.getItem(CHECKPOINT_STORAGE_KEY));
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (typeof utils.sanitizeCheckpointSnapshot === "function") {
-      return utils.sanitizeCheckpointSnapshot(parsed);
-    }
-    if (!parsed || typeof parsed !== "object") return null;
-    if (typeof parsed.chapter !== "number") return null;
-    if (!parsed.player || !parsed.inventory) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+  return deserializeCheckpoint(raw, utils.sanitizeCheckpointSnapshot);
 }
 
 function updateContinueButtonVisibility() {
@@ -600,59 +567,7 @@ function markActiveSavePoint(savePointId) {
 }
 
 export function buildCheckpointSnapshot(savePointId) {
-  return {
-    version: 1,
-    savedAt: Date.now(),
-    savePointId,
-    chapter: state.chapter,
-    maxChapterUnlocked: state.maxChapterUnlocked,
-    mode: state.mode,
-    objective: state.objective,
-    hint: state.hint,
-    storyLine: state.storyLine,
-    gatherGoal: state.gatherGoal,
-    gathered: state.gathered,
-    lakeQuest: deepCopy(state.lakeQuest),
-    flags: deepCopy(state.flags),
-    skills: deepCopy(state.skills),
-    player: {
-      x: state.player.x,
-      y: state.player.y,
-      dirX: state.player.dirX,
-      dirY: state.player.dirY,
-      speed: state.player.speed,
-      hp: state.player.hp,
-      maxHp: state.player.maxHp,
-      mana: state.player.mana,
-      maxMana: state.player.maxMana,
-      level: state.player.level,
-      bridgeSprint: state.player.bridgeSprint,
-    },
-    combatMods: deepCopy(state.combatMods),
-    ui: deepCopy(state.ui),
-    inventory: deepCopy(state.inventory),
-    recipeBook: deepCopy(state.recipeBook),
-    loadout: deepCopy(state.loadout),
-    collectibles: deepCopy(state.collectibles),
-    obstacles: deepCopy(state.obstacles),
-    breakables: deepCopy(state.breakables),
-    lakes: deepCopy(state.lakes),
-    enemies: deepCopy(state.enemies),
-    drops: deepCopy(state.drops),
-    wolf: state.wolf ? deepCopy(state.wolf) : null,
-    bridgeChallenge: deepCopy(state.bridgeChallenge),
-    resourceSpawner: deepCopy(state.resourceSpawner),
-    registration: deepCopy(state.registration),
-    skillChoice: deepCopy(state.skillChoice),
-    gacha: {
-      wishTokens: state.gacha.wishTokens,
-      spins: state.gacha.spins,
-      lastPull: deepCopy(state.gacha.lastPull),
-      lastResults: deepCopy(state.gacha.lastResults),
-      collection: deepCopy(state.gacha.collection),
-      activeBannerId: state.gacha.activeBannerId,
-    },
-  };
+  return createCheckpointSnapshotFromState(state, savePointId);
 }
 
 export function applyCheckpointSnapshot(snapshot, options = {}) {
@@ -676,6 +591,7 @@ export function applyCheckpointSnapshot(snapshot, options = {}) {
   Object.assign(state.skills, snapshot.skills || {});
   Object.assign(state.combatMods, snapshot.combatMods || {});
   Object.assign(state.ui, snapshot.ui || {});
+  setUiMode(state, getUiMode(state));
   if (typeof state.ui.inventoryOpen !== "boolean") state.ui.inventoryOpen = false;
   if (typeof state.ui.worldMapOpen !== "boolean") state.ui.worldMapOpen = false;
   if (typeof state.ui.characterMenuOpen !== "boolean") state.ui.characterMenuOpen = false;
@@ -758,13 +674,7 @@ export function applyCheckpointSnapshot(snapshot, options = {}) {
   state.dialogue = null;
   applyLoadoutStats();
   state.recipeBook.open = false;
-  state.ui.menuOpen = false;
-  state.ui.gachaOpen = false;
-  state.ui.inventoryOpen = false;
-  state.ui.worldMapOpen = false;
-  state.ui.characterMenuOpen = false;
-  state.ui.collectionOpen = false;
-  state.ui.gachaResultOpen = false;
+  setUiMode(state, UI_MODES.GAMEPLAY);
   state.ui.menuTab = "characters";
   state.ui.characterSelection = 0;
   state.ui.weaponSelection = 0;
@@ -800,7 +710,7 @@ export function applyCheckpointSnapshot(snapshot, options = {}) {
 export function saveCheckpoint(savePointId) {
   const snapshot = buildCheckpointSnapshot(savePointId);
   const success = withStorage((storage) => {
-    storage.setItem(CHECKPOINT_STORAGE_KEY, JSON.stringify(snapshot));
+    storage.setItem(CHECKPOINT_STORAGE_KEY, serializeCheckpoint(snapshot));
     return true;
   });
   if (!success) {
@@ -1257,32 +1167,7 @@ function deepForestBreakables() {
 }
 
 function chapterSavePoints(chapter) {
-  if (chapter === 1) {
-    return [{ id: "village_well", chapter: 1, x: 170, y: 96, radius: 14, activated: false }];
-  }
-  if (chapter === 2) {
-    return [{ id: "trail_crystal", chapter: 2, x: 148, y: 96, radius: 14, activated: false }];
-  }
-  if (chapter === 3) {
-    return [{ id: "wolf_watch", chapter: 3, x: 62, y: 96, radius: 14, activated: false }];
-  }
-  if (chapter === 4) {
-    return [{ id: "deep_circle", chapter: 4, x: 108, y: 104, radius: 14, activated: false }];
-  }
-  if (chapter === 5) {
-    return [{ id: "lake_stone", chapter: 5, x: 38, y: 94, radius: 14, activated: false }];
-  }
-  if (chapter === 6) {
-    drawWorldDecorLayer(chapter, "back");
-    return [{ id: "bridge_gate", chapter: 6, x: 30, y: 94, radius: 14, activated: false }];
-  }
-  if (chapter === 7) {
-    return [{ id: "mush_ring", chapter: 7, x: 78, y: 102, radius: 14, activated: false }];
-  }
-  if (chapter === 8) {
-    return [{ id: "source_plaza", chapter: 8, x: 86, y: 102, radius: 14, activated: false }];
-  }
-  return [];
+  return getChapterSavePoints(chapter);
 }
 
 export function resetAdventureState() {
@@ -1321,13 +1206,7 @@ export function resetAdventureState() {
   state.bridgeChallenge.failures = 0;
   state.bridgeChallenge.planks = [];
   setupAmbientSpawner(false);
-  state.ui.menuOpen = false;
-  state.ui.gachaOpen = false;
-  state.ui.inventoryOpen = false;
-  state.ui.worldMapOpen = false;
-  state.ui.characterMenuOpen = false;
-  state.ui.collectionOpen = false;
-  state.ui.gachaResultOpen = false;
+  setUiMode(state, UI_MODES.GAMEPLAY);
   state.savePoints = [];
   state.checkpointMeta.id = null;
   state.checkpointMeta.chapter = null;
@@ -1424,11 +1303,7 @@ function gotoChapter(chapter) {
   state.registration.index = 0;
   state.registration.score = 0;
   state.skillChoice.active = false;
-  state.ui.menuOpen = false;
-  state.ui.gachaOpen = false;
-  state.ui.inventoryOpen = false;
-  state.ui.worldMapOpen = false;
-  state.ui.characterMenuOpen = false;
+  setUiMode(state, UI_MODES.GAMEPLAY);
   state.recipeBook.open = false;
   state.savePoints = chapterSavePoints(chapter);
   if (state.checkpointMeta.id && state.checkpointMeta.chapter === chapter) {
@@ -1734,10 +1609,7 @@ function setupMenuInteractions() {
   if (bannerBtn) {
     bannerBtn.addEventListener("click", () => {
       if (state.mode === "menu") return;
-      state.ui.menuOpen = true;
-      state.ui.gachaOpen = true;
-      state.ui.collectionOpen = false;
-      state.ui.gachaResultOpen = false;
+      setUiMode(state, UI_MODES.GACHA);
       setHint("Открыт экран баннера.", 2);
       canvas.focus();
     });
@@ -1746,9 +1618,7 @@ function setupMenuInteractions() {
   if (collectionBtn) {
     collectionBtn.addEventListener("click", () => {
       if (state.mode === "menu") return;
-      state.ui.menuOpen = true;
-      state.ui.collectionOpen = true;
-      state.ui.gachaOpen = false;
+      setUiMode(state, UI_MODES.COLLECTION);
       setHint("Открыта коллекция.", 2);
       canvas.focus();
     });
@@ -1775,7 +1645,7 @@ function inventoryText() {
 }
 
 function refreshHud() {
-  chapterNode.textContent = chapterNames[state.chapter] || "Единая долина";
+  chapterNode.textContent = CHAPTER_NAMES[state.chapter] || "Единая долина";
   levelNode.textContent = String(state.player.level);
   hpNode.textContent = `${formatStatValue(state.player.hp)}/${formatStatValue(state.player.maxHp)}`;
   manaNode.textContent = `${formatStatValue(state.player.mana)}/${formatStatValue(state.player.maxMana)}`;
@@ -1818,7 +1688,7 @@ function resizeCanvasDisplay() {
 
 
 function unlockedWorldNodes() {
-  return worldRoute.filter((chapter) => chapter <= (state.maxChapterUnlocked || 0));
+  return WORLD_ROUTE.filter((chapter) => chapter <= (state.maxChapterUnlocked || 0));
 }
 
 function moveMapSelection(direction) {
@@ -1890,108 +1760,84 @@ function checkGlobalKeys() {
   if (consumeKey(["KeyF"])) {
     toggleFullscreen();
   }
-  if (consumeKey(["KeyM"]) && state.mode !== "menu" && !state.dialogue && !state.registration.active && !state.skillChoice.active) {
-    state.ui.menuOpen = !state.ui.menuOpen;
-    if (!state.ui.menuOpen) {
-      state.ui.gachaOpen = false;
-      state.ui.inventoryOpen = false;
-      state.ui.worldMapOpen = false;
-      state.ui.characterMenuOpen = false;
-      state.ui.collectionOpen = false;
-      state.ui.gachaResultOpen = false;
-    } else {
+
+  const priority = getModePriority(state);
+  if (priority === "dialogue" || priority === "registration" || priority === "skill_choice") {
+    return;
+  }
+
+  if (consumeAction(consumeKey, ACTIONS.TOGGLE_MENU) && state.mode !== "menu") {
+    if (getUiMode(state) === UI_MODES.GAMEPLAY) {
+      setUiMode(state, UI_MODES.MENU);
       setHint("Меню: P персонаж, I рюкзак, R книга, G баннеры, C коллекция.", 2.8);
+    } else {
+      setUiMode(state, UI_MODES.GAMEPLAY);
     }
   }
-  if (consumeKey(["KeyP"]) && state.mode !== "menu") {
-    state.ui.menuOpen = true;
-    state.ui.characterMenuOpen = !state.ui.characterMenuOpen;
-    if (state.ui.characterMenuOpen) {
-      state.ui.gachaOpen = false;
-      state.ui.collectionOpen = false;
-      state.ui.inventoryOpen = false;
+  if (consumeAction(consumeKey, ACTIONS.TOGGLE_CHARACTER) && state.mode !== "menu") {
+    if (getUiMode(state) === UI_MODES.CHARACTER) {
+      setUiMode(state, UI_MODES.GAMEPLAY);
+    } else {
+      setUiMode(state, UI_MODES.CHARACTER);
       state.ui.menuTab = "characters";
       setHint("Меню персонажей: 1/2/3 — вкладки, ←/→ выбор, Enter — применить.", 2.6);
     }
   }
-  if (consumeKey(["KeyI"]) && state.mode !== "menu") {
-    state.ui.inventoryOpen = !state.ui.inventoryOpen;
-    if (state.ui.inventoryOpen) {
-      state.ui.worldMapOpen = false;
-      state.ui.characterMenuOpen = false;
-      state.ui.collectionOpen = false;
-    }
+  if (consumeAction(consumeKey, ACTIONS.TOGGLE_INVENTORY) && state.mode !== "menu") {
+    setUiMode(state, getUiMode(state) === UI_MODES.INVENTORY ? UI_MODES.GAMEPLAY : UI_MODES.INVENTORY);
   }
-  if (consumeKey(["Tab"]) && state.mode !== "menu") {
-    state.ui.worldMapOpen = !state.ui.worldMapOpen;
-    if (state.ui.worldMapOpen) {
-      state.ui.inventoryOpen = false;
-      state.ui.characterMenuOpen = false;
-      state.ui.collectionOpen = false;
+  if (consumeAction(consumeKey, ACTIONS.TOGGLE_WORLD_MAP) && state.mode !== "menu") {
+    if (getUiMode(state) === UI_MODES.WORLD_MAP) {
+      setUiMode(state, UI_MODES.GAMEPLAY);
+    } else {
+      setUiMode(state, UI_MODES.WORLD_MAP);
       state.mapSelection = state.chapter;
       setHint("Карта: ←/→ выбрать область, Enter — быстрый переход.", 2.4);
     }
   }
-  if (state.ui.worldMapOpen) {
-    if (consumeKey(["ArrowLeft", "KeyA"])) moveMapSelection(-1);
-    if (consumeKey(["ArrowRight", "KeyD"])) moveMapSelection(1);
-    if (consumeKey(["Enter", "KeyE"])) fastTravelToSelection();
+  if (getUiMode(state) === UI_MODES.WORLD_MAP) {
+    if (consumeAction(consumeKey, ACTIONS.MAP_LEFT)) moveMapSelection(-1);
+    if (consumeAction(consumeKey, ACTIONS.MAP_RIGHT)) moveMapSelection(1);
+    if (consumeAction(consumeKey, ACTIONS.MAP_CONFIRM)) fastTravelToSelection();
   }
-  if (state.ui.menuOpen && consumeKey(["KeyC"])) {
-    state.ui.collectionOpen = !state.ui.collectionOpen;
-    if (state.ui.collectionOpen) {
-      state.ui.gachaOpen = false;
-      state.ui.gachaResultOpen = false;
+  if (consumeAction(consumeKey, ACTIONS.TOGGLE_COLLECTION) && getUiMode(state) !== UI_MODES.GAMEPLAY) {
+    if (getUiMode(state) === UI_MODES.COLLECTION) {
+      setUiMode(state, UI_MODES.MENU);
+    } else {
+      setUiMode(state, UI_MODES.COLLECTION);
       setHint("Коллекция открыта.", 2.2);
     }
   }
-  if (state.ui.characterMenuOpen) {
-    if (consumeKey(["Digit1"])) state.ui.menuTab = "characters";
-    if (consumeKey(["Digit2"])) state.ui.menuTab = "backpack";
-    if (consumeKey(["Digit3"])) state.ui.menuTab = "book";
-    if (consumeKey(["ArrowLeft", "KeyA"])) updateCharacterMenuSelection(-1);
-    if (consumeKey(["ArrowRight", "KeyD"])) updateCharacterMenuSelection(1);
-    if (consumeKey(["Enter", "KeyE"])) commitCharacterMenuSelection();
+  if (getUiMode(state) === UI_MODES.CHARACTER) {
+    if (consumeAction(consumeKey, ACTIONS.MENU_TAB_1)) state.ui.menuTab = "characters";
+    if (consumeAction(consumeKey, ACTIONS.MENU_TAB_2)) state.ui.menuTab = "backpack";
+    if (consumeAction(consumeKey, ACTIONS.MENU_TAB_3)) state.ui.menuTab = "book";
+    if (consumeAction(consumeKey, ACTIONS.MENU_LEFT)) updateCharacterMenuSelection(-1);
+    if (consumeAction(consumeKey, ACTIONS.MENU_RIGHT)) updateCharacterMenuSelection(1);
+    if (consumeAction(consumeKey, ACTIONS.MENU_CONFIRM)) commitCharacterMenuSelection();
   }
-  if (consumeKey(["Escape"])) {
+  if (consumeAction(consumeKey, ACTIONS.CLOSE_OR_BACK)) {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
-    } else if (state.ui.worldMapOpen) {
-      state.ui.worldMapOpen = false;
-    } else if (state.ui.collectionOpen) {
-      state.ui.collectionOpen = false;
-    } else if (state.ui.characterMenuOpen) {
-      state.ui.characterMenuOpen = false;
-    } else if (state.ui.gachaResultOpen) {
-      state.ui.gachaResultOpen = false;
-    } else if (state.ui.gachaOpen) {
-      state.ui.gachaOpen = false;
-    } else if (state.ui.menuOpen) {
-      state.ui.menuOpen = false;
+    } else {
+      setUiMode(state, UI_MODES.GAMEPLAY);
     }
   }
-  if (state.ui.menuOpen && consumeKey(["KeyG"])) {
-    state.ui.gachaOpen = !state.ui.gachaOpen;
-    state.ui.gachaResultOpen = false;
-    if (state.ui.gachaOpen) {
-      state.ui.collectionOpen = false;
-      state.ui.characterMenuOpen = false;
+  if (consumeAction(consumeKey, ACTIONS.TOGGLE_GACHA) && getUiMode(state) !== UI_MODES.GAMEPLAY) {
+    if (getUiMode(state) === UI_MODES.GACHA || getUiMode(state) === UI_MODES.GACHA_RESULT) {
+      setUiMode(state, UI_MODES.MENU);
+    } else {
+      setUiMode(state, UI_MODES.GACHA);
     }
   }
 
-  if (
-    state.chapter === 9 &&
-    !state.dialogue &&
-    !state.registration.active &&
-    !state.skillChoice.active &&
-    consumeKey(["Enter"])
-  ) {
-    if (!state.ui.menuOpen) {
-      state.ui.menuOpen = true;
+  if (state.chapter === 9 && consumeKey(["Enter"])) {
+    if (getUiMode(state) === UI_MODES.GAMEPLAY) {
+      setUiMode(state, UI_MODES.MENU);
       return;
     }
-    if (state.ui.menuOpen && !state.ui.gachaOpen) {
-      state.ui.gachaOpen = true;
+    if (getUiMode(state) === UI_MODES.MENU) {
+      setUiMode(state, UI_MODES.GACHA);
     }
   }
 }
@@ -3302,11 +3148,11 @@ export function update(dt) {
     if (state.ui.gachaOpen) {
       if (state.ui.gachaResultOpen) {
         if (consumeKey(["Enter", "KeyE", "KeyO", "Space"])) {
-          state.ui.gachaResultOpen = false;
+          setUiMode(state, UI_MODES.GACHA);
         }
       } else if (consumeKey(["KeyA", "KeyJ", "Enter"])) {
         if (runGachaSpins(1)) {
-          state.ui.gachaResultOpen = true;
+          setUiMode(state, UI_MODES.GACHA_RESULT);
         }
       }
     }
@@ -4355,7 +4201,7 @@ function drawWorldMapPanel() {
   ctx.fillText("Единая карта долины (Tab — закрыть)", 24, 34);
 
   for (let chapter = 0; chapter <= 9; chapter += 1) {
-    const node = chapterMapNodes[chapter];
+    const node = CHAPTER_MAP_NODES[chapter];
     if (!node) continue;
     const unlocked = chapter <= (state.maxChapterUnlocked || 0);
     const isCurrent = chapter === state.chapter;
@@ -4375,7 +4221,7 @@ function drawWorldMapPanel() {
     ctx.fillText(node.name, node.x - 10, node.y - 6);
 
     if (chapter > 0) {
-      const prev = chapterMapNodes[chapter - 1];
+      const prev = CHAPTER_MAP_NODES[chapter - 1];
       ctx.strokeStyle = unlocked ? "#72998b" : "#495752";
       ctx.beginPath();
       ctx.moveTo(prev.x, prev.y);
@@ -4574,7 +4420,7 @@ function renderGameToText() {
     coordinate_system: "origin top-left; x increases right; y increases down; world units are canvas pixels on 320x180",
     mode: state.mode,
     chapter: state.chapter,
-    chapter_name: chapterNames[state.chapter] || "Эпилог",
+    chapter_name: CHAPTER_NAMES[state.chapter] || "Эпилог",
     objective: state.objective,
     story_line: state.storyLine,
     player: {
@@ -4703,15 +4549,13 @@ function renderGameToText() {
   return JSON.stringify(payload);
 }
 
-window.render_game_to_text = renderGameToText;
-window.advanceTime = (ms) => {
-  manualStepping = true;
-  const steps = Math.max(1, Math.round(ms / (1000 / 60)));
-  for (let i = 0; i < steps; i += 1) {
-    update(STEP);
-  }
-  render();
-};
+registerTestBridge(window, {
+  renderGameToText,
+  advanceTimeMs: (ms) => {
+    manualStepping = true;
+    advanceTimeBridge(update, render, STEP, ms);
+  },
+});
 
 export function setupInput() {
   window.addEventListener("keydown", (event) => {
