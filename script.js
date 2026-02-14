@@ -17,6 +17,8 @@ const inventoryNode = document.querySelector("#inventory-label");
 const coinsNode = document.querySelector("#coins-label");
 const objectiveNode = document.querySelector("#objective");
 const hintNode = document.querySelector("#hint");
+const bannerBtn = document.querySelector("#banner-btn");
+const collectionBtn = document.querySelector("#collection-btn");
 
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
@@ -281,6 +283,8 @@ const state = {
     inventoryOpen: false,
     worldMapOpen: false,
     characterMenuOpen: false,
+    collectionOpen: false,
+    gachaResultOpen: false,
   },
   maxChapterUnlocked: 0,
   mapSelection: 0,
@@ -355,53 +359,21 @@ const state = {
     allyRegen: 0,
   },
   gacha: {
-    coins: 2,
-    costPerSpin: 2,
+    wishTokens: 3,
     spins: 0,
     lastPull: null,
-    owned: {},
-    banner: [
-      {
-        id: "herbalist_liora",
-        name: "Травница Лиора",
-        type: "character",
-        rarity: "SSR",
-        weight: 8,
-        description: "Союзница: медленно восстанавливает здоровье в бою.",
-      },
-      {
-        id: "arcane_book",
-        name: "Магическая книжка",
-        type: "relic",
-        rarity: "SR",
-        weight: 18,
-        description: "Позволяет освоить больше боевых навыков.",
-      },
-      {
-        id: "ward_amulet",
-        name: "Оберег-амулет",
-        type: "relic",
-        rarity: "SR",
-        weight: 22,
-        description: "Снижает входящий урон.",
-      },
-      {
-        id: "forest_scout",
-        name: "Лесной следопыт",
-        type: "character",
-        rarity: "R",
-        weight: 26,
-        description: "Поддержка отряда. Дубликаты дают валюту.",
-      },
-      {
-        id: "river_guard",
-        name: "Страж брода",
-        type: "character",
-        rarity: "R",
-        weight: 26,
-        description: "Поддержка отряда. Дубликаты дают валюту.",
-      },
-    ],
+    lastResults: [],
+    activeBannerId: "standard_forest",
+    collection: {
+      characters: [],
+      weapons: {},
+    },
+    config: {
+      currencies: [],
+      weapons: [],
+      characters: [],
+      banners: [],
+    },
   },
   projectiles: [],
   leafBursts: [],
@@ -469,10 +441,10 @@ function setStoryLine(text, seconds = 2.8) {
   state.storyLineTimer = seconds;
 }
 
-function awardGachaCoins(amount, reason) {
+function awardWishTokens(amount, reason) {
   if (amount <= 0) return;
-  state.gacha.coins += amount;
-  setHint(`Получено ${amount} валюты для круток: ${reason}.`, 2.6);
+  state.gacha.wishTokens += amount;
+  setHint(`Получено ${amount} WishToken: ${reason}.`, 2.6);
 }
 
 function deepCopy(data) {
@@ -484,6 +456,21 @@ function withStorage(callback) {
     return callback(window.localStorage);
   } catch {
     return null;
+  }
+}
+
+async function loadGachaConfig() {
+  try {
+    const response = await fetch("./gacha-config.json", { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const config = await response.json();
+    if (!config || !Array.isArray(config.banners) || config.banners.length === 0) {
+      throw new Error("empty banners");
+    }
+    state.gacha.config = config;
+    state.gacha.activeBannerId = config.banners[0].banner_id;
+  } catch {
+    setHint("Не удалось загрузить конфиг баннера.", 2.4);
   }
 }
 
@@ -560,10 +547,12 @@ function buildCheckpointSnapshot(savePointId) {
     registration: deepCopy(state.registration),
     skillChoice: deepCopy(state.skillChoice),
     gacha: {
-      coins: state.gacha.coins,
+      wishTokens: state.gacha.wishTokens,
       spins: state.gacha.spins,
-      lastPull: state.gacha.lastPull,
-      owned: deepCopy(state.gacha.owned),
+      lastPull: deepCopy(state.gacha.lastPull),
+      lastResults: deepCopy(state.gacha.lastResults),
+      collection: deepCopy(state.gacha.collection),
+      activeBannerId: state.gacha.activeBannerId,
     },
   };
 }
@@ -592,6 +581,8 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   if (typeof state.ui.inventoryOpen !== "boolean") state.ui.inventoryOpen = false;
   if (typeof state.ui.worldMapOpen !== "boolean") state.ui.worldMapOpen = false;
   if (typeof state.ui.characterMenuOpen !== "boolean") state.ui.characterMenuOpen = false;
+  if (typeof state.ui.collectionOpen !== "boolean") state.ui.collectionOpen = false;
+  if (typeof state.ui.gachaResultOpen !== "boolean") state.ui.gachaResultOpen = false;
   if (!state.party || typeof state.party !== "object") {
     state.party = { leader: "Листи", members: [] };
   }
@@ -636,10 +627,21 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
     state.skillChoice.selected = snapshot.skillChoice.selected ?? null;
   }
   if (snapshot.gacha) {
-    state.gacha.coins = snapshot.gacha.coins ?? state.gacha.coins;
+    state.gacha.wishTokens = snapshot.gacha.wishTokens ?? state.gacha.wishTokens;
     state.gacha.spins = snapshot.gacha.spins ?? state.gacha.spins;
-    state.gacha.lastPull = snapshot.gacha.lastPull ?? state.gacha.lastPull;
-    state.gacha.owned = snapshot.gacha.owned ? deepCopy(snapshot.gacha.owned) : state.gacha.owned;
+    state.gacha.lastPull = snapshot.gacha.lastPull ? deepCopy(snapshot.gacha.lastPull) : state.gacha.lastPull;
+    state.gacha.lastResults = Array.isArray(snapshot.gacha.lastResults)
+      ? deepCopy(snapshot.gacha.lastResults).slice(0, 10)
+      : state.gacha.lastResults;
+    if (snapshot.gacha.collection) {
+      state.gacha.collection.characters = Array.isArray(snapshot.gacha.collection.characters)
+        ? deepCopy(snapshot.gacha.collection.characters)
+        : state.gacha.collection.characters;
+      state.gacha.collection.weapons = snapshot.gacha.collection.weapons
+        ? deepCopy(snapshot.gacha.collection.weapons)
+        : state.gacha.collection.weapons;
+    }
+    state.gacha.activeBannerId = snapshot.gacha.activeBannerId ?? state.gacha.activeBannerId;
   }
 
   state.player.vx = 0;
@@ -660,6 +662,8 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   state.ui.inventoryOpen = false;
   state.ui.worldMapOpen = false;
   state.ui.characterMenuOpen = false;
+  state.ui.collectionOpen = false;
+  state.ui.gachaResultOpen = false;
 
   state.objective = snapshot.objective || state.objective;
   state.hint = snapshot.hint || "-";
@@ -759,69 +763,100 @@ function tryActivateSavePoint() {
   return true;
 }
 
-function hasOwnedBannerItem(itemId) {
-  return (state.gacha.owned[itemId] || 0) > 0;
+function getActiveBannerConfig() {
+  return state.gacha.config.banners.find((banner) => banner.banner_id === state.gacha.activeBannerId) || null;
 }
 
-function pickBannerReward() {
-  const totalWeight = state.gacha.banner.reduce((sum, entry) => sum + entry.weight, 0);
+function getWeaponDefById(id) {
+  return state.gacha.config.weapons.find((item) => item.id === id) || null;
+}
+
+function getCharacterDefById(id) {
+  return state.gacha.config.characters.find((item) => item.id === id) || null;
+}
+
+function pickByWeight(pool) {
+  if (!Array.isArray(pool) || pool.length === 0) return null;
+  const totalWeight = pool.reduce((sum, entry) => sum + Math.max(0, entry.weight || 0), 0);
+  if (totalWeight <= 0) return pool[0];
   let roll = randomRange(0, totalWeight);
-  for (const entry of state.gacha.banner) {
-    roll -= entry.weight;
+  for (const entry of pool) {
+    roll -= Math.max(0, entry.weight || 0);
     if (roll <= 0) return entry;
   }
-  return state.gacha.banner[state.gacha.banner.length - 1];
+  return pool[pool.length - 1];
 }
 
-function applyBannerReward(entry) {
-  const ownedBefore = state.gacha.owned[entry.id] || 0;
-  state.gacha.owned[entry.id] = ownedBefore + 1;
+function makeGachaResult(category, itemId, itemName) {
+  return {
+    category,
+    itemId,
+    itemName,
+    timestamp: Date.now(),
+  };
+}
 
-  if (entry.type === "character" && ownedBefore === 0 && !state.party.members.includes(entry.name)) {
-    state.party.members.push(entry.name);
-  }
+function pushGachaHistory(result) {
+  state.gacha.lastResults.unshift(result);
+  state.gacha.lastResults = state.gacha.lastResults.slice(0, 10);
+}
 
-  if (ownedBefore > 0) {
-    state.gacha.coins += 1;
-    setHint(`Дубликат: ${entry.name}. Компенсация +1 валюта.`, 2.4);
-  } else {
-    setHint(`Получено из баннера: ${entry.name} (${entry.rarity}).`, 2.6);
-  }
-
-  if (entry.id === "ward_amulet") {
-    state.combatMods.damageReduction = 0.25;
-  }
-
-  if (entry.id === "herbalist_liora") {
-    state.combatMods.allyRegen = 1.2;
-  }
-
-  if (entry.id === "arcane_book") {
-    if (!state.skills.directBurst) {
-      state.skills.directBurst = true;
-      state.combatMods.bonusDamage = Math.max(state.combatMods.bonusDamage, 7);
+function applyGachaReward(result) {
+  if (result.category === "character") {
+    const hasCharacter = state.gacha.collection.characters.includes(result.itemId);
+    if (hasCharacter) {
+      state.gacha.wishTokens += 1;
+      setHint(`Дубликат персонажа: ${result.itemName}. Компенсация +1 WishToken.`, 2.8);
+      return;
     }
-    if (!state.skills.poisonBloom) {
-      state.skills.poisonBloom = true;
-      state.combatMods.dotDamage = Math.max(state.combatMods.dotDamage, 2.3);
-    }
+    state.gacha.collection.characters.push(result.itemId);
+    setHint(`Получен персонаж: ${result.itemName}.`, 2.6);
+    return;
   }
+
+  state.gacha.collection.weapons[result.itemId] = (state.gacha.collection.weapons[result.itemId] || 0) + 1;
+  setHint(`Получено оружие: ${result.itemName}.`, 2.4);
+}
+
+function rollFromBanner(banner) {
+  const isCharacter = Math.random() < banner.character_chance;
+  if (isCharacter) {
+    const picked = pickByWeight(banner.character_pool);
+    if (!picked) return null;
+    const def = getCharacterDefById(picked.id);
+    return makeGachaResult("character", picked.id, def ? def.name : picked.id);
+  }
+
+  const picked = pickByWeight(banner.weapon_pool);
+  if (!picked) return null;
+  const def = getWeaponDefById(picked.id);
+  return makeGachaResult("weapon", picked.id, def ? def.name : picked.id);
 }
 
 function runGachaSpins(spins) {
+  const banner = getActiveBannerConfig();
+  if (!banner) {
+    setHint("Конфиг баннера не загружен.", 2.2);
+    return false;
+  }
+
   let completed = 0;
   for (let i = 0; i < spins; i += 1) {
-    if (state.gacha.coins < state.gacha.costPerSpin) break;
-    state.gacha.coins -= state.gacha.costPerSpin;
-    const reward = pickBannerReward();
-    state.gacha.lastPull = reward.id;
+    if (state.gacha.wishTokens < banner.cost_amount) break;
+    state.gacha.wishTokens -= banner.cost_amount;
+
+    const result = rollFromBanner(banner);
+    if (!result) break;
+
+    applyGachaReward(result);
+    pushGachaHistory(result);
+    state.gacha.lastPull = result;
     state.gacha.spins += 1;
-    applyBannerReward(reward);
     completed += 1;
   }
 
   if (completed === 0) {
-    setHint("Недостаточно валюты для крутки.", 2);
+    setHint("Недостаточно WishToken для крутки.", 2);
     return false;
   }
 
@@ -1167,6 +1202,8 @@ function resetAdventureState() {
   state.ui.inventoryOpen = false;
   state.ui.worldMapOpen = false;
   state.ui.characterMenuOpen = false;
+  state.ui.collectionOpen = false;
+  state.ui.gachaResultOpen = false;
   state.savePoints = [];
   state.checkpointMeta.id = null;
   state.checkpointMeta.chapter = null;
@@ -1195,10 +1232,13 @@ function resetAdventureState() {
   state.combatMods.dotDamage = 0;
   state.combatMods.damageReduction = 0;
   state.combatMods.allyRegen = 0;
-  state.gacha.coins = 2;
+  state.gacha.wishTokens = 3;
   state.gacha.spins = 0;
   state.gacha.lastPull = null;
-  state.gacha.owned = {};
+  state.gacha.lastResults = [];
+  state.gacha.collection.characters = [];
+  state.gacha.collection.weapons = {};
+  state.gacha.activeBannerId = "standard_forest";
   state.party.leader = "Листи";
   state.party.members = [];
 
@@ -1546,6 +1586,29 @@ function setupMenuInteractions() {
     entry.button.addEventListener("click", entry.action);
   }
 
+  if (bannerBtn) {
+    bannerBtn.addEventListener("click", () => {
+      if (state.mode === "menu") return;
+      state.ui.menuOpen = true;
+      state.ui.gachaOpen = true;
+      state.ui.collectionOpen = false;
+      state.ui.gachaResultOpen = false;
+      setHint("Открыт экран баннера.", 2);
+      canvas.focus();
+    });
+  }
+
+  if (collectionBtn) {
+    collectionBtn.addEventListener("click", () => {
+      if (state.mode === "menu") return;
+      state.ui.menuOpen = true;
+      state.ui.collectionOpen = true;
+      state.ui.gachaOpen = false;
+      setHint("Открыта коллекция.", 2);
+      canvas.focus();
+    });
+  }
+
   showLorePanel();
   updateContinueButtonVisibility();
   updateMenuFocus();
@@ -1573,7 +1636,7 @@ function refreshHud() {
   manaNode.textContent = `${formatStatValue(state.player.mana)}/${formatStatValue(state.player.maxMana)}`;
   inventoryNode.textContent = inventoryText();
   if (coinsNode) {
-    coinsNode.textContent = `${state.gacha.coins}`;
+    coinsNode.textContent = `${state.gacha.wishTokens}`;
   }
   objectiveNode.textContent = state.objective;
   hintNode.textContent = state.hint;
@@ -1654,8 +1717,10 @@ function checkGlobalKeys() {
       state.ui.inventoryOpen = false;
       state.ui.worldMapOpen = false;
       state.ui.characterMenuOpen = false;
+      state.ui.collectionOpen = false;
+      state.ui.gachaResultOpen = false;
     } else {
-      setHint("Меню открыто: G — баннер, C — персонажи, A/B — крутки.", 2.8);
+      setHint("Меню: G — баннеры, C — коллекция, A — крутка x1.", 2.8);
     }
   }
   if (consumeKey(["KeyI"]) && state.mode !== "menu") {
@@ -1663,6 +1728,7 @@ function checkGlobalKeys() {
     if (state.ui.inventoryOpen) {
       state.ui.worldMapOpen = false;
       state.ui.characterMenuOpen = false;
+      state.ui.collectionOpen = false;
     }
   }
   if (consumeKey(["Tab"]) && state.mode !== "menu") {
@@ -1670,6 +1736,7 @@ function checkGlobalKeys() {
     if (state.ui.worldMapOpen) {
       state.ui.inventoryOpen = false;
       state.ui.characterMenuOpen = false;
+      state.ui.collectionOpen = false;
       state.mapSelection = state.chapter;
       setHint("Карта: ←/→ выбрать область, Enter — быстрый переход.", 2.4);
     }
@@ -1680,10 +1747,11 @@ function checkGlobalKeys() {
     if (consumeKey(["Enter", "KeyE"])) fastTravelToSelection();
   }
   if (state.ui.menuOpen && consumeKey(["KeyC"])) {
-    state.ui.characterMenuOpen = !state.ui.characterMenuOpen;
-    if (state.ui.characterMenuOpen) {
+    state.ui.collectionOpen = !state.ui.collectionOpen;
+    if (state.ui.collectionOpen) {
       state.ui.gachaOpen = false;
-      setHint("Меню персонажей: выбранные союзники усиливают отряд.", 2.4);
+      state.ui.gachaResultOpen = false;
+      setHint("Коллекция открыта.", 2.2);
     }
   }
   if (consumeKey(["Escape"])) {
@@ -1691,8 +1759,10 @@ function checkGlobalKeys() {
       document.exitFullscreen().catch(() => {});
     } else if (state.ui.worldMapOpen) {
       state.ui.worldMapOpen = false;
-    } else if (state.ui.characterMenuOpen) {
-      state.ui.characterMenuOpen = false;
+    } else if (state.ui.collectionOpen) {
+      state.ui.collectionOpen = false;
+    } else if (state.ui.gachaResultOpen) {
+      state.ui.gachaResultOpen = false;
     } else if (state.ui.gachaOpen) {
       state.ui.gachaOpen = false;
     } else if (state.ui.menuOpen) {
@@ -1701,7 +1771,9 @@ function checkGlobalKeys() {
   }
   if (state.ui.menuOpen && consumeKey(["KeyG"])) {
     state.ui.gachaOpen = !state.ui.gachaOpen;
+    state.ui.gachaResultOpen = false;
     if (state.ui.gachaOpen) {
+      state.ui.collectionOpen = false;
       state.ui.characterMenuOpen = false;
     }
   }
@@ -1937,7 +2009,7 @@ function collectDrop(drop) {
       state.flags.lakeQuestDone = true;
       setObjective("Рыбий жир собран. Переходите к мосту вправо.");
       setStoryLine("Озёрные твари отступили. Путь к старому мосту открыт.");
-      awardGachaCoins(3, "озёрное испытание");
+      awardWishTokens(3, "озёрное испытание");
     } else if (!state.flags.lakeQuestDone) {
       setObjective(
         `У озёр победите монстров и соберите рыбий жир (${state.lakeQuest.fishOilCollected}/${state.lakeQuest.fishOilGoal}).`
@@ -2077,7 +2149,7 @@ function damageWolf(amount) {
   state.player.maxHp += 2;
   state.player.hp = Math.min(state.player.maxHp, state.player.hp + 2);
   state.player.level += 1;
-  awardGachaCoins(2, "победа над волком");
+  awardWishTokens(2, "победа над волком");
 
   setObjective("Волк повержен. Нажмите L, чтобы «Листопадом» разбить завал впереди.");
   setHint("Получен магический клык (+2 к максимальному здоровью).", 3.2);
@@ -2103,12 +2175,16 @@ function damageEnemy(enemy, amount) {
     spawnDrop(enemy.x, enemy.y, "fish_oil", "Рыбий жир");
   }
 
+  if (Math.random() < 0.12) {
+    awardWishTokens(1, "редкий трофей с монстра");
+  }
+
   if (enemy.kind === "bat") {
     const aliveBats = state.enemies.filter((entry) => entry.kind === "bat" && entry.alive).length;
     if (aliveBats <= 0 && !state.flags.batsDefeated) {
       state.flags.batsDefeated = true;
       state.player.level += 1;
-      awardGachaCoins(4, "отражение налёта летучих мышей");
+      awardWishTokens(4, "отражение налёта летучих мышей");
       state.skillChoice.active = true;
       state.skillChoice.selected = null;
       setObjective("Выберите навык: A - больше урона, B - продолжительный урон.");
@@ -2233,7 +2309,7 @@ function onHealerTreeBroken() {
       setObjective("Рецепт добавлен в рюкзак. Откройте книгу (R) и выходите к озёрам вправо.");
       setHint("Крафт: 1 мята + 1 влажная лягушка (H). За квест вы получили валюту.", 3.8);
       setStoryLine("Новый рецепт в книге: зелье восстановления здоровья.");
-      awardGachaCoins(2, "помощь травнице");
+      awardWishTokens(2, "помощь травнице");
     }
   );
 }
@@ -2528,7 +2604,7 @@ function updateBridgeChallenge(dt) {
     state.bridgeChallenge.active = false;
     if (!state.flags.bridgePassed) {
       state.flags.bridgePassed = true;
-      awardGachaCoins(2, "испытание на мосту");
+      awardWishTokens(2, "испытание на мосту");
       setStoryLine("Мост остался позади. Впереди грибная аллея у источника.");
     }
     return;
@@ -2589,7 +2665,7 @@ function submitRegistrationAnswer(answerLetter) {
   state.registration.active = false;
   if (state.registration.score >= 2) {
     state.flags.registrationComplete = true;
-    awardGachaCoins(2, "опрос на зачисление");
+    awardWishTokens(2, "опрос на зачисление");
     setStoryLine("Снуп одобрил заявку. В этот момент у источника началась тревога.");
     gotoChapter(8);
   } else {
@@ -2870,7 +2946,7 @@ function update(dt) {
   if (state.mode === "menu") return;
 
 
-  if (state.ui.inventoryOpen || state.ui.worldMapOpen || state.ui.characterMenuOpen) {
+  if (state.ui.inventoryOpen || state.ui.worldMapOpen || state.ui.characterMenuOpen || state.ui.collectionOpen) {
     return;
   }
 
@@ -2901,11 +2977,14 @@ function update(dt) {
 
   if (state.ui.menuOpen) {
     if (state.ui.gachaOpen) {
-      if (consumeKey(["KeyA", "KeyJ", "Enter"])) {
-        runGachaSpins(1);
-      }
-      if (consumeKey(["KeyB", "KeyK"])) {
-        runGachaSpins(5);
+      if (state.ui.gachaResultOpen) {
+        if (consumeKey(["Enter", "KeyE", "KeyO", "Space"])) {
+          state.ui.gachaResultOpen = false;
+        }
+      } else if (consumeKey(["KeyA", "KeyJ", "Enter"])) {
+        if (runGachaSpins(1)) {
+          state.ui.gachaResultOpen = true;
+        }
       }
     }
     return;
@@ -3543,37 +3622,100 @@ function drawPauseMenuPanel() {
   if (!state.ui.menuOpen) return;
 
   ctx.fillStyle = "rgba(11, 16, 13, 0.82)";
-  ctx.fillRect(52, 26, 216, 124);
+  ctx.fillRect(52, 20, 216, 150);
   ctx.strokeStyle = "#c8dcb2";
-  ctx.strokeRect(52.5, 26.5, 215, 123);
+  ctx.strokeRect(52.5, 20.5, 215, 149);
   ctx.fillStyle = "#e5f1d8";
   ctx.font = '9px "Lucida Console", "Courier New", monospace';
-  ctx.fillText("Меню отряда", 128, 42);
+  ctx.fillText("Меню отряда", 128, 36);
   ctx.font = '8px "Lucida Console", "Courier New", monospace';
-  ctx.fillText("M: закрыть", 62, 58);
-  ctx.fillText(`Валюта: ${state.gacha.coins}`, 62, 70);
-  ctx.fillText("G: открыть баннер", 62, 82);
-  ctx.fillText("C: меню персонажей", 62, 94);
-  ctx.fillText("A: крутка x1", 62, 106);
-  ctx.fillText("B: крутка x5", 62, 118);
+  ctx.fillText("M: закрыть", 62, 52);
+  ctx.fillText(`WishToken: ${state.gacha.wishTokens}`, 62, 64);
+  ctx.fillText("G: Баннеры", 62, 76);
+  ctx.fillText("C: Коллекция", 62, 88);
+  ctx.fillText("A/Enter: Крутка x1", 62, 100);
 
   if (state.ui.gachaOpen) {
     drawGachaBannerPanel();
   }
+  if (state.ui.collectionOpen) {
+    drawCollectionPanel();
+  }
 }
 
 function drawGachaBannerPanel() {
-  ctx.fillStyle = "rgba(25, 22, 14, 0.92)";
-  ctx.fillRect(60, 126, 200, 48);
+  const banner = getActiveBannerConfig();
+  if (!banner) return;
+
+  ctx.fillStyle = "rgba(25, 22, 14, 0.94)";
+  ctx.fillRect(60, 108, 200, 66);
   ctx.strokeStyle = "#dcb878";
-  ctx.strokeRect(60.5, 126.5, 199, 47);
+  ctx.strokeRect(60.5, 108.5, 199, 65);
   ctx.fillStyle = "#f6e7be";
   ctx.font = '7px "Lucida Console", "Courier New", monospace';
-  ctx.fillText("Баннер: Травница Лиора | Магическая книжка | Оберег-амулет", 64, 138);
-  ctx.fillText(`Круток: ${state.gacha.spins} | Цена: ${state.gacha.costPerSpin}`, 64, 150);
-  const last = state.gacha.banner.find((entry) => entry.id === state.gacha.lastPull);
-  const pullLabel = last ? `Последняя награда: ${last.name}` : "Последняя награда: -";
-  ctx.fillText(ellipsizeText(pullLabel, 186), 64, 162);
+  ctx.fillText(`Баннер: ${ellipsizeText(banner.title, 188)}`, 64, 120);
+  ctx.fillText(`Описание: ${ellipsizeText(banner.description, 176)}`, 64, 130);
+  ctx.fillText(`Стоимость x1: ${banner.cost_amount} WishToken`, 64, 140);
+  ctx.fillText(`Круток: ${state.gacha.spins}`, 64, 150);
+
+  const last = state.gacha.lastPull;
+  const pullLabel = last ? `${last.category === "character" ? "Персонаж" : "Оружие"}: ${last.itemName}` : "Последняя награда: -";
+  ctx.fillText(ellipsizeText(`Последняя: ${pullLabel}`, 188), 64, 160);
+
+  if (state.ui.gachaResultOpen && last) {
+    ctx.fillStyle = "rgba(15, 19, 23, 0.95)";
+    ctx.fillRect(76, 54, 168, 52);
+    ctx.strokeStyle = "#9ec9dd";
+    ctx.strokeRect(76.5, 54.5, 167, 51);
+    ctx.fillStyle = "#def1ff";
+    ctx.fillText("Результат крутки", 86, 68);
+    ctx.fillText(`${last.category === "character" ? "Персонаж" : "Оружие"}: ${last.itemName}`, 86, 80);
+    ctx.fillText("OK: Enter / E", 86, 94);
+  }
+
+  ctx.fillStyle = "#d8c8a6";
+  ctx.fillText("История (последние 10):", 62, 170);
+  const history = state.gacha.lastResults.slice(0, 2);
+  history.forEach((entry, idx) => {
+    const line = `${entry.category === "character" ? "P" : "W"} ${entry.itemName}`;
+    ctx.fillText(ellipsizeText(line, 84), 168, 170 + idx * 8);
+  });
+}
+
+function drawCollectionPanel() {
+  ctx.fillStyle = "rgba(21, 16, 12, 0.95)";
+  ctx.fillRect(16, 104, 288, 70);
+  ctx.strokeStyle = "#d4bf9a";
+  ctx.strokeRect(16.5, 104.5, 287, 69);
+  ctx.fillStyle = "#f3e6c3";
+  ctx.font = '7px "Lucida Console", "Courier New", monospace';
+  ctx.fillText("Коллекция", 24, 116);
+
+  const characterNames = state.gacha.collection.characters.map((id) => {
+    const def = getCharacterDefById(id);
+    return def ? def.name : id;
+  });
+  const characterLine = characterNames.length ? characterNames.join(", ") : "нет";
+  ctx.fillText(`Персонажи: ${ellipsizeText(characterLine, 248)}`, 24, 128);
+
+  const weaponCounts = Object.entries(state.gacha.collection.weapons).map(([id, count]) => {
+    const def = getWeaponDefById(id);
+    const name = def ? def.name : id;
+    return `${name} x${count}`;
+  });
+  const weaponLine = weaponCounts.length ? weaponCounts.join(", ") : "нет";
+  ctx.fillText(`Оружие: ${ellipsizeText(weaponLine, 252)}`, 24, 140);
+
+  ctx.fillText("История последних 10:", 24, 152);
+  const historyText = state.gacha.lastResults
+    .slice(0, 10)
+    .map((entry) => `${entry.category === "character" ? "P" : "W"}:${entry.itemName}`)
+    .join(" | ") || "пусто";
+  ctx.fillText(ellipsizeText(historyText, 252), 24, 164);
+}
+
+function drawCharacterMenuPanel() {
+  return;
 }
 
 function drawHeartIcon(x, y, ratio) {
@@ -3762,20 +3904,7 @@ function drawWorldMapPanel() {
 }
 
 function drawCharacterMenuPanel() {
-  if (!state.ui.characterMenuOpen) return;
-  ctx.fillStyle = "rgba(26, 19, 14, 0.92)";
-  ctx.fillRect(56, 82, 208, 90);
-  ctx.strokeStyle = "#d5c18f";
-  ctx.strokeRect(56.5, 82.5, 207, 89);
-  ctx.fillStyle = "#f3e6c3";
-  ctx.font = '8px "Lucida Console", "Courier New", monospace';
-  ctx.fillText("Меню персонажей", 64, 96);
-  ctx.fillText(`Лидер: ${state.party.leader}`, 64, 108);
-  const members = state.party.members.length ? state.party.members.join(", ") : "пока нет";
-  ctx.fillText(`Союзники: ${ellipsizeText(members, 184)}`, 64, 120);
-  ctx.fillText(`Реген: +${formatStatValue(state.combatMods.allyRegen)}/с`, 64, 132);
-  ctx.fillText(`Сопр. урону: ${Math.round(state.combatMods.damageReduction * 100)}%`, 64, 144);
-  ctx.fillText("C — закрыть, G — перейти к баннеру", 64, 158);
+  return;
 }
 
 
@@ -4034,11 +4163,12 @@ function renderGameToText() {
       selected: state.skillChoice.selected,
     },
     gacha: {
-      coins: state.gacha.coins,
-      cost_per_spin: state.gacha.costPerSpin,
+      wish_tokens: state.gacha.wishTokens,
       spins: state.gacha.spins,
       last_pull: state.gacha.lastPull,
-      owned: state.gacha.owned,
+      history: state.gacha.lastResults,
+      collection: state.gacha.collection,
+      active_banner_id: state.gacha.activeBannerId,
       menu_open: state.ui.menuOpen,
       banner_open: state.ui.gachaOpen,
       character_menu_open: state.ui.characterMenuOpen,
@@ -4114,12 +4244,13 @@ window.addEventListener("keyup", (event) => {
 
 window.addEventListener("resize", resizeCanvasDisplay);
 document.addEventListener("fullscreenchange", resizeCanvasDisplay);
-function boot() {
+async function boot() {
   gotoChapter(0);
   state.mode = "menu";
   state.objective = "Выберите пункт в главном меню";
   state.hint = "Начните игру или откройте раздел «Как играть».";
   setupMenuInteractions();
+  await loadGachaConfig();
   resizeCanvasDisplay();
   refreshHud();
   requestAnimationFrame(updateFrame);
