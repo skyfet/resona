@@ -4,13 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Resona: Лесной Источник</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="layout" aria-label="Resona forest quest">
       <section id="menu" class="menu" aria-label="Main menu">
         <h1>Resona: Лесной Источник</h1>
-        <p class="menu-subtitle">Открытый мир Resona: единая долина с поселением, чащей, озёрами и источником без жёстких линейных глав.</p>
+        <p class="menu-subtitle">Мир-песочница: живой лес, случайные биомы, свободные перемещения и боевой рост персонажа.</p>
         <p class="menu-tip">Выберите пункт меню мышкой или клавишами ↑ / ↓ и Enter.</p>
 
         <div class="menu-actions" role="group" aria-label="Запуск игры">
@@ -26,26 +29,11 @@
         </div>
 
         <div id="controls-panel" class="controls" aria-label="Controls" hidden>
-          <p>Движение: WASD / стрелки</p>
-          <p>Взаимодействие: E / Enter</p>
-          <p>Сохранение: E у кристалла</p>
-          <p>Удар рукой: J / B</p>
-          <p>Порыв ветра: K / A (мана)</p>
-          <p>Листопад: L (или Enter у препятствия)</p>
-          <p>Переключение героя (если открыта Травница): T</p>
-          <p>Скрафтить пустую банку: Y</p>
-          <p>Уворот / рывок на мосту: Space</p>
-          <p>Книга рецептов: R</p>
-          <p>Скрафтить зелье: H</p>
-          <p>Выпить зелье: U</p>
-          <p>Ответы в опросе и выбор навыка: A / B</p>
-          <p>Меню отряда: M</p>
-          <p>Коллекция: C (в меню отряда)</p>
-          <p>Багаж: I (в отдельной вкладке)</p>
-          <p>Единая карта долины: Tab (←/→ выбор, Enter — быстрый переход)</p>
-          <p>Баннеры: G или кнопка «Баннеры», крутка x1 — A</p>
-          <p>Коллекция: C или кнопка «Коллекция»</p>
-          <p>Полный экран: F</p>
+          <p>Движение: WASD / стрелки</p><p>Взаимодействие: E / Enter</p><p>Уворот: Space</p>
+          <p>Удар рукой: J / B</p><p>Порыв ветра: K / A</p><p>Листопад: L</p>
+          <p>Глобальное меню: M</p><p>Персонаж/оружие/амулет: P</p><p>Рюкзак: I</p>
+          <p>Книга рецептов: R</p><p>Баннеры: G</p><p>Коллекция: C</p>
+          <p>Карта долины: Tab</p><p>Крафт: H</p><p>Зелье: U</p>
         </div>
       </section>
 
@@ -59,6 +47,7 @@
         <p><span>HP:</span> <strong id="hp-label">100/100</strong></p>
         <p><span>MP:</span> <strong id="mana-label">24/24</strong></p>
         <p><span>Валюта:</span> <strong id="coins-label">0</strong></p>
+        <p><span>Боевой профиль:</span> <strong id="build-label">ATK 0 | DEF 0 | SPD 0 | CRIT 0%</strong></p>
         <div class="hud-actions" role="group" aria-label="Быстрое меню">
           <button id="banner-btn" type="button">Баннеры</button>
           <button id="collection-btn" type="button">Коллекция</button>

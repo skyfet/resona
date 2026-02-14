@@ -15,6 +15,7 @@ const hpNode = document.querySelector("#hp-label");
 const manaNode = document.querySelector("#mana-label");
 const inventoryNode = document.querySelector("#inventory-label");
 const coinsNode = document.querySelector("#coins-label");
+const buildNode = document.querySelector("#build-label");
 const objectiveNode = document.querySelector("#objective");
 const hintNode = document.querySelector("#hint");
 const bannerBtn = document.querySelector("#banner-btn");
@@ -275,6 +276,7 @@ const state = {
     windCooldown: 0,
     leafCooldown: 0,
     bridgeSprint: 0,
+    critChance: 0.08,
   },
   skills: {
     windGust: true,
@@ -317,12 +319,26 @@ const state = {
     characterMenuOpen: false,
     collectionOpen: false,
     gachaResultOpen: false,
+    menuTab: "characters",
+    characterSelection: 0,
+    weaponSelection: 0,
+    amuletSelection: 0,
   },
   maxChapterUnlocked: 0,
   mapSelection: 0,
   party: {
     leader: "Листи",
     members: [],
+  },
+  loadout: {
+    characters: ["listi", "healer"],
+    weapons: ["forest_blade", "sky_book"],
+    amulets: ["none", "falcon_ring"],
+    selectedCharacter: "listi",
+    selectedWeapon: "forest_blade",
+    selectedAmulet: "none",
+    bonusSkillPoints: 0,
+    lastMilestone: 0,
   },
   savePoints: [],
   checkpointMeta: {
@@ -415,6 +431,7 @@ const state = {
   leafBursts: [],
   sparks: [],
   dialogue: null,
+  worldDecorSeed: {},
 };
 
 canvas.setAttribute("tabindex", "0");
@@ -447,6 +464,47 @@ function randomInt(min, max) {
 
 function dist(aX, aY, bX, bY) {
   return Math.hypot(aX - bX, aY - bY);
+}
+
+function seededRandom(seed) {
+  const value = Math.sin(seed * 999.91) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+function getWeaponProfile(id) {
+  if (id === "sky_book") {
+    return { name: "Небесная книга", attack: 7, mana: 8, crit: 0.02, speed: -4, desc: "Каждые 10 уровней: +2 к очкам навыков" };
+  }
+  return { name: "Лесной клинок", attack: 5, mana: 0, crit: 0.01, speed: 0, desc: "Стабильный урон без штрафов" };
+}
+
+function getAmuletProfile(id) {
+  if (id === "falcon_ring") {
+    return { name: "Кольцо сокола", speed: 18, mana: 12, reduction: 0, desc: "+скорость, +макс. мана" };
+  }
+  return { name: "Без амулета", speed: 0, mana: 0, reduction: 0, desc: "Базовые параметры" };
+}
+
+function applyLoadoutStats() {
+  const weapon = getWeaponProfile(state.loadout.selectedWeapon);
+  const amulet = getAmuletProfile(state.loadout.selectedAmulet);
+  const healer = state.hero === "healer";
+  state.player.speed = (healer ? 72 : 68) + weapon.speed + amulet.speed;
+  state.player.maxMana = 24 + weapon.mana + amulet.mana + state.player.level * 0.6;
+  state.player.mana = Math.min(state.player.maxMana, state.player.mana);
+  state.player.critChance = clamp(0.05 + weapon.crit + (healer ? 0.03 : 0), 0.05, 0.35);
+  state.combatMods.bonusDamage = Math.max(state.combatMods.bonusDamage, weapon.attack + Math.floor(state.player.level / 3));
+}
+
+function getPlayerAttackPower() {
+  const weapon = getWeaponProfile(state.loadout.selectedWeapon);
+  const base = state.hero === "healer" ? 11 : 14;
+  return base + weapon.attack + Math.floor(state.player.level * 0.8) + state.combatMods.bonusDamage * 0.35;
+}
+
+function getPlayerDefense() {
+  const amulet = getAmuletProfile(state.loadout.selectedAmulet);
+  return clamp(0.04 + state.combatMods.damageReduction + amulet.reduction, 0, 0.45);
 }
 
 function keyDown(codes) {
@@ -574,6 +632,7 @@ function buildCheckpointSnapshot(savePointId) {
     ui: deepCopy(state.ui),
     inventory: deepCopy(state.inventory),
     recipeBook: deepCopy(state.recipeBook),
+    loadout: deepCopy(state.loadout),
     collectibles: deepCopy(state.collectibles),
     obstacles: deepCopy(state.obstacles),
     breakables: deepCopy(state.breakables),
@@ -622,12 +681,14 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   if (typeof state.ui.characterMenuOpen !== "boolean") state.ui.characterMenuOpen = false;
   if (typeof state.ui.collectionOpen !== "boolean") state.ui.collectionOpen = false;
   if (typeof state.ui.gachaResultOpen !== "boolean") state.ui.gachaResultOpen = false;
+  if (!state.ui.menuTab) state.ui.menuTab = "characters";
   if (!state.party || typeof state.party !== "object") {
     state.party = { leader: "Листи", members: [] };
   }
   if (!Array.isArray(state.party.members)) state.party.members = [];
   Object.assign(state.inventory, snapshot.inventory || {});
   Object.assign(state.recipeBook, snapshot.recipeBook || {});
+  Object.assign(state.loadout, snapshot.loadout || {});
 
   if (snapshot.player) {
     state.player.x = snapshot.player.x ?? state.player.x;
@@ -695,6 +756,7 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   state.leafBursts = [];
   state.sparks = [];
   state.dialogue = null;
+  applyLoadoutStats();
   state.recipeBook.open = false;
   state.ui.menuOpen = false;
   state.ui.gachaOpen = false;
@@ -703,6 +765,10 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   state.ui.characterMenuOpen = false;
   state.ui.collectionOpen = false;
   state.ui.gachaResultOpen = false;
+  state.ui.menuTab = "characters";
+  state.ui.characterSelection = 0;
+  state.ui.weaponSelection = 0;
+  state.ui.amuletSelection = 0;
 
   state.objective = snapshot.objective || state.objective;
   state.hint = snapshot.hint || "-";
@@ -934,6 +1000,7 @@ function nextDialogueLine() {
   if (state.dialogue.index >= state.dialogue.lines.length) {
     const callback = state.dialogue.onEnd;
     state.dialogue = null;
+  applyLoadoutStats();
     if (typeof callback === "function") {
       callback();
     }
@@ -1206,6 +1273,7 @@ function chapterSavePoints(chapter) {
     return [{ id: "lake_stone", chapter: 5, x: 38, y: 94, radius: 14, activated: false }];
   }
   if (chapter === 6) {
+    drawWorldDecorLayer(chapter, "back");
     return [{ id: "bridge_gate", chapter: 6, x: 30, y: 94, radius: 14, activated: false }];
   }
   if (chapter === 7) {
@@ -1302,6 +1370,11 @@ function resetAdventureState() {
   state.party.leader = "Листи";
   state.hero = "listi";
   state.party.members = [];
+  state.loadout.selectedCharacter = "listi";
+  state.loadout.selectedWeapon = "forest_blade";
+  state.loadout.selectedAmulet = "none";
+  state.loadout.bonusSkillPoints = 0;
+  state.loadout.lastMilestone = 0;
 
   state.player.maxHp = 100;
   state.player.hp = state.player.maxHp;
@@ -1331,6 +1404,7 @@ function resetAdventureState() {
   state.leafBursts = [];
   state.sparks = [];
   state.dialogue = null;
+  applyLoadoutStats();
   state.maxChapterUnlocked = 0;
   state.mapSelection = 0;
 
@@ -1345,6 +1419,7 @@ function gotoChapter(chapter) {
   state.leafBursts.length = 0;
   state.sparks.length = 0;
   state.dialogue = null;
+  applyLoadoutStats();
   state.registration.active = false;
   state.registration.index = 0;
   state.registration.score = 0;
@@ -1708,6 +1783,13 @@ function refreshHud() {
   if (coinsNode) {
     coinsNode.textContent = `${state.gacha.wishTokens}`;
   }
+  if (buildNode) {
+    const atk = Math.round(getPlayerAttackPower());
+    const def = Math.round(getPlayerDefense() * 100);
+    const spd = Math.round(state.player.speed);
+    const crit = Math.round(state.player.critChance * 100);
+    buildNode.textContent = `ATK ${atk} | DEF ${def}% | SPD ${spd} | CRIT ${crit}%`;
+  }
   objectiveNode.textContent = state.objective;
   hintNode.textContent = state.hint;
 }
@@ -1764,6 +1846,34 @@ function fastTravelToSelection() {
   setHint("Быстрый переход: карта перенесла Листи в выбранную область.", 2.4);
 }
 
+function updateCharacterMenuSelection(direction) {
+  if (state.ui.menuTab === "characters") {
+    const options = state.loadout.characters;
+    state.ui.characterSelection = (state.ui.characterSelection + direction + options.length) % options.length;
+  } else if (state.ui.menuTab === "backpack") {
+    const options = state.loadout.weapons;
+    state.ui.weaponSelection = (state.ui.weaponSelection + direction + options.length) % options.length;
+  } else if (state.ui.menuTab === "book") {
+    const options = state.loadout.amulets;
+    state.ui.amuletSelection = (state.ui.amuletSelection + direction + options.length) % options.length;
+  }
+}
+
+function commitCharacterMenuSelection() {
+  if (state.ui.menuTab === "characters") {
+    const selected = state.loadout.characters[state.ui.characterSelection] || "listi";
+    state.loadout.selectedCharacter = selected;
+    state.hero = selected;
+    state.party.leader = selected === "healer" ? "Травница" : "Листи";
+  } else if (state.ui.menuTab === "backpack") {
+    state.loadout.selectedWeapon = state.loadout.weapons[state.ui.weaponSelection] || "forest_blade";
+  } else {
+    state.loadout.selectedAmulet = state.loadout.amulets[state.ui.amuletSelection] || "none";
+  }
+  applyLoadoutStats();
+  setHint("Экипировка применена и боевые статы пересчитаны.", 2);
+}
+
 function travelToAdjacentChapter(direction) {
   const target = state.chapter + direction;
   if (target < 1 || target > 9) return false;
@@ -1790,7 +1900,18 @@ function checkGlobalKeys() {
       state.ui.collectionOpen = false;
       state.ui.gachaResultOpen = false;
     } else {
-      setHint("Меню: G — баннеры, C — коллекция, A — крутка x1.", 2.8);
+      setHint("Меню: P персонаж, I рюкзак, R книга, G баннеры, C коллекция.", 2.8);
+    }
+  }
+  if (consumeKey(["KeyP"]) && state.mode !== "menu") {
+    state.ui.menuOpen = true;
+    state.ui.characterMenuOpen = !state.ui.characterMenuOpen;
+    if (state.ui.characterMenuOpen) {
+      state.ui.gachaOpen = false;
+      state.ui.collectionOpen = false;
+      state.ui.inventoryOpen = false;
+      state.ui.menuTab = "characters";
+      setHint("Меню персонажей: 1/2/3 — вкладки, ←/→ выбор, Enter — применить.", 2.6);
     }
   }
   if (consumeKey(["KeyI"]) && state.mode !== "menu") {
@@ -1824,6 +1945,14 @@ function checkGlobalKeys() {
       setHint("Коллекция открыта.", 2.2);
     }
   }
+  if (state.ui.characterMenuOpen) {
+    if (consumeKey(["Digit1"])) state.ui.menuTab = "characters";
+    if (consumeKey(["Digit2"])) state.ui.menuTab = "backpack";
+    if (consumeKey(["Digit3"])) state.ui.menuTab = "book";
+    if (consumeKey(["ArrowLeft", "KeyA"])) updateCharacterMenuSelection(-1);
+    if (consumeKey(["ArrowRight", "KeyD"])) updateCharacterMenuSelection(1);
+    if (consumeKey(["Enter", "KeyE"])) commitCharacterMenuSelection();
+  }
   if (consumeKey(["Escape"])) {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
@@ -1831,6 +1960,8 @@ function checkGlobalKeys() {
       state.ui.worldMapOpen = false;
     } else if (state.ui.collectionOpen) {
       state.ui.collectionOpen = false;
+    } else if (state.ui.characterMenuOpen) {
+      state.ui.characterMenuOpen = false;
     } else if (state.ui.gachaResultOpen) {
       state.ui.gachaResultOpen = false;
     } else if (state.ui.gachaOpen) {
@@ -1865,8 +1996,21 @@ function checkGlobalKeys() {
   }
 }
 
+function checkMilestonePerks() {
+  if (state.loadout.selectedWeapon !== "sky_book") return;
+  const milestone = Math.floor(state.player.level / 10);
+  if (milestone <= state.loadout.lastMilestone) return;
+  const gained = (milestone - state.loadout.lastMilestone) * 2;
+  state.loadout.lastMilestone = milestone;
+  state.loadout.bonusSkillPoints += gained;
+  state.combatMods.bonusDamage += gained;
+  state.combatMods.allyRegen += gained * 0.06;
+  setHint(`Небесная книга усилила вас: +${gained} очка навыков.`, 2.6);
+}
+
 function updateTimers(dt) {
   const player = state.player;
+  applyLoadoutStats();
   player.invuln = Math.max(0, player.invuln - dt);
   player.dodgeCooldown = Math.max(0, player.dodgeCooldown - dt);
   player.basicCooldown = Math.max(0, player.basicCooldown - dt);
@@ -1880,6 +2024,7 @@ function updateTimers(dt) {
   player.bridgeSprint = Math.max(0, player.bridgeSprint - dt);
 
   player.mana = clamp(player.mana + player.manaRegen * dt, 0, player.maxMana);
+  checkMilestonePerks();
   if (state.combatMods.allyRegen > 0 && state.mode !== "menu" && !state.ui.menuOpen) {
     player.hp = Math.min(player.maxHp, player.hp + state.combatMods.allyRegen * dt);
   }
@@ -2131,7 +2276,7 @@ function collectNearbyDrops() {
 }
 
 function applyDamageToPlayer(amount, textHint) {
-  const reduced = Math.max(1, Math.round(amount * (1 - state.combatMods.damageReduction)));
+  const reduced = Math.max(1, Math.round(amount * (1 - getPlayerDefense())));
   if (state.player.invuln > 0) return;
   state.player.hp = Math.max(0, state.player.hp - reduced);
   state.player.invuln = 0.35;
@@ -2378,8 +2523,13 @@ function tryBasicAttack() {
   const target = nearestEnemyToPlayer(28);
   if (!target) return;
 
-  const baseDamage = state.hero === "healer" ? 10 : 13;
-  const damage = baseDamage + (state.skills.directBurst ? Math.max(4, state.combatMods.bonusDamage) : 0);
+  let damage = getPlayerAttackPower();
+  if (state.skills.directBurst) damage += Math.max(4, state.combatMods.bonusDamage * 0.7);
+  if (Math.random() < state.player.critChance) {
+    damage *= 1.55;
+    setHint("Критический удар!", 0.8);
+  }
+  damage = Math.round(damage);
   if (target.type === "wolf") {
     if (target.distance < 28) {
       damageWolf(damage);
@@ -2420,12 +2570,12 @@ function tryWindGust() {
     for (const enemy of state.enemies) {
       if (!enemy.alive) continue;
       if (dist(enemy.x, enemy.y, player.x, player.y) <= aoe) {
-        damageEnemy(enemy, 22 + Math.round(state.combatMods.bonusDamage * 0.3));
+        damageEnemy(enemy, Math.round(getPlayerAttackPower() * 1.12));
         hitCount += 1;
       }
     }
     if (state.wolf && state.wolf.alive && dist(state.wolf.x, state.wolf.y, player.x, player.y) <= aoe) {
-      damageWolf(22);
+      damageWolf(Math.round(getPlayerAttackPower() * 1.05));
       hitCount += 1;
     }
     if (hitCount > 0) {
@@ -2440,7 +2590,7 @@ function tryWindGust() {
       vx: xAxis * 182,
       vy: yAxis * 182,
       life: 1.1,
-      damage: 30 + Math.round(state.combatMods.bonusDamage * 0.45),
+      damage: Math.round(getPlayerAttackPower() * 1.35),
       radius: 2.5,
     });
   }
@@ -2529,7 +2679,7 @@ function tryLeafFall() {
   for (const enemy of state.enemies) {
     if (!enemy.alive) continue;
     if (dist(centerX, centerY, enemy.x, enemy.y) < 34) {
-      damageEnemy(enemy, 16 + Math.round(state.combatMods.bonusDamage * 0.25));
+      damageEnemy(enemy, Math.round(getPlayerAttackPower() * 0.9));
     }
   }
 
@@ -2570,13 +2720,16 @@ function trySwapHero() {
 
   if (state.hero === "listi") {
     state.hero = "healer";
+    state.loadout.selectedCharacter = "healer";
     state.party.leader = "Травница";
     setHint("Лидер отряда: Травница. Быстрые атаки и ядовитая поддержка.", 2.4);
   } else {
     state.hero = "listi";
+    state.loadout.selectedCharacter = "listi";
     state.party.leader = "Листи";
     setHint("Лидер отряда: Листи.", 1.6);
   }
+  applyLoadoutStats();
 }
 
 function tryCraftPotion() {
@@ -3657,6 +3810,35 @@ function drawVillageBackground() {
   }
 }
 
+function getWorldDecorForChapter(chapter) {
+  if (!state.worldDecorSeed[chapter]) {
+    const entries = [];
+    const density = chapter >= 7 ? 22 : 16;
+    const sprites = ["bush", "rock", "mushroom", "herb", "treeSmall"];
+    for (let i = 0; i < density; i += 1) {
+      const seed = chapter * 100 + i * 17;
+      const x = Math.round(12 + seededRandom(seed + 1) * 296);
+      const y = Math.round(24 + seededRandom(seed + 2) * 130);
+      const scale = 0.45 + seededRandom(seed + 3) * 0.65;
+      const sprite = sprites[Math.floor(seededRandom(seed + 4) * sprites.length)];
+      const layer = seededRandom(seed + 5) > 0.62 ? "front" : "back";
+      entries.push({ x, y, scale, sprite, layer });
+    }
+    state.worldDecorSeed[chapter] = entries;
+  }
+  return state.worldDecorSeed[chapter];
+}
+
+function drawWorldDecorLayer(chapter, layer) {
+  if (!environmentSpriteSheet.complete) return;
+  const entries = getWorldDecorForChapter(chapter);
+  for (const entry of entries) {
+    if (entry.layer !== layer) continue;
+    const size = Math.round(18 + entry.scale * 16);
+    drawEnvironmentSprite(entry.sprite, entry.x - size / 2, entry.y - size / 2, size, size);
+  }
+}
+
 function drawForestBackground(chapter) {
   if (chapter === 6) {
     ctx.fillStyle = "#1f261d";
@@ -3686,6 +3868,7 @@ function drawForestBackground(chapter) {
 
   drawSpriteRow("grassTile", 20, 48, 0, 48, 20);
   drawSpriteRow("grassTile", HEIGHT - 22, 48, 0, 48, 20);
+  drawWorldDecorLayer(chapter, "back");
 
   ctx.fillStyle = pathTone;
   ctx.fillRect(0, 78, WIDTH, 28);
@@ -3891,9 +4074,9 @@ function drawPauseMenuPanel() {
   ctx.font = '8px "Lucida Console", "Courier New", monospace';
   ctx.fillText("M: закрыть", 62, 52);
   ctx.fillText(`WishToken: ${state.gacha.wishTokens}`, 62, 64);
-  ctx.fillText("G: Баннеры", 62, 76);
-  ctx.fillText("C: Коллекция", 62, 88);
-  ctx.fillText("A/Enter: Крутка x1", 62, 100);
+  ctx.fillText("P: Персонаж / оружие / амулет", 62, 76);
+  ctx.fillText("G: Баннеры | C: Коллекция", 62, 88);
+  ctx.fillText("2: Рюкзак, 3: Книга, A/Enter: Крутка x1", 62, 100);
 
   if (state.ui.gachaOpen) {
     drawGachaBannerPanel();
@@ -3966,16 +4149,55 @@ function drawCollectionPanel() {
   const weaponLine = weaponCounts.length ? weaponCounts.join(", ") : "нет";
   ctx.fillText(`Оружие: ${ellipsizeText(weaponLine, 252)}`, 24, 140);
 
-  ctx.fillText("История последних 10:", 24, 152);
+  ctx.fillText("Актуальный баннер оружия: Небесная книга / Лесной клинок", 24, 152);
   const historyText = state.gacha.lastResults
     .slice(0, 10)
     .map((entry) => `${entry.category === "character" ? "P" : "W"}:${entry.itemName}`)
     .join(" | ") || "пусто";
-  ctx.fillText(ellipsizeText(historyText, 252), 24, 164);
+  ctx.fillText(ellipsizeText(`Травница: ${state.flags.rescuedHealer ? "в отряде" : "ищется в чаще"} | ` + historyText, 252), 24, 164);
 }
 
 function drawCharacterMenuPanel() {
-  return;
+  if (!state.ui.characterMenuOpen) return;
+  ctx.fillStyle = "rgba(10, 18, 28, 0.94)";
+  ctx.fillRect(24, 18, 272, 144);
+  ctx.strokeStyle = "#8de8d7";
+  ctx.strokeRect(24.5, 18.5, 271, 143);
+  ctx.fillStyle = "#daf8ff";
+  ctx.font = '8px "Lucida Console", "Courier New", monospace';
+  ctx.fillText("Командное меню: 1 Персонаж | 2 Оружие | 3 Амулет", 30, 32);
+
+  const tab = state.ui.menuTab;
+  const rows = [];
+  if (tab === "characters") {
+    rows.push(`Текущий: ${state.loadout.selectedCharacter === "healer" ? "Травница" : "Листи"}`);
+    rows.push("Варианты: Листи (баланс) / Травница (поддержка)");
+    rows.push("Enter: применить выбранного персонажа");
+    const selected = state.loadout.characters[state.ui.characterSelection] || "listi";
+    rows.push(`Выбрано: ${selected === "healer" ? "Травница" : "Листи"}`);
+  } else if (tab === "backpack") {
+    const weaponId = state.loadout.weapons[state.ui.weaponSelection] || "forest_blade";
+    const weapon = getWeaponProfile(weaponId);
+    rows.push(`Активно: ${getWeaponProfile(state.loadout.selectedWeapon).name}`);
+    rows.push(`Выбор: ${weapon.name}`);
+    rows.push(weapon.desc);
+    rows.push("Enter: экипировать оружие");
+  } else {
+    const amuletId = state.loadout.amulets[state.ui.amuletSelection] || "none";
+    const amulet = getAmuletProfile(amuletId);
+    rows.push(`Активно: ${getAmuletProfile(state.loadout.selectedAmulet).name}`);
+    rows.push(`Выбор: ${amulet.name}`);
+    rows.push(amulet.desc);
+    rows.push("Enter: экипировать амулет");
+  }
+
+  rows.push(`Бонус навыков Небесной книги: ${state.loadout.bonusSkillPoints}`);
+  rows.push("←/→ сменить вариант, Esc/Р закрыть");
+
+  rows.forEach((line, idx) => {
+    ctx.fillStyle = idx < 4 ? "#aceadf" : "#f6dea8";
+    ctx.fillText(ellipsizeText(line, 256), 32, 52 + idx * 14);
+  });
 }
 
 function drawHeartIcon(x, y, ratio) {
@@ -4167,10 +4389,21 @@ function drawWorldMapPanel() {
   ctx.fillText("Жёлтый: вы здесь | Мятный: выбор | Enter: быстрый переход", 24, 152);
 }
 
-function drawCharacterMenuPanel() {
-  return;
-}
 
+function drawAtmosphereOverlay() {
+  const tints = {
+    2: "rgba(120, 220, 170, 0.08)",
+    3: "rgba(200, 130, 110, 0.08)",
+    4: "rgba(110, 190, 130, 0.1)",
+    5: "rgba(90, 170, 220, 0.1)",
+    6: "rgba(170, 140, 110, 0.09)",
+    7: "rgba(140, 110, 190, 0.09)",
+    8: "rgba(180, 90, 140, 0.09)",
+    9: "rgba(110, 220, 210, 0.1)",
+  };
+  ctx.fillStyle = tints[state.chapter] || "rgba(120, 180, 140, 0.06)";
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+}
 
 function drawVictoryPanel() {
   if (state.mode !== "victory" && state.chapter !== 9) return;
@@ -4249,6 +4482,7 @@ function renderScene() {
   drawInventoryPanel();
   drawWorldMapPanel();
   drawEdgeMeters();
+  drawAtmosphereOverlay();
 
   if (state.flash > 0) {
     ctx.fillStyle = `rgba(220, 70, 70, ${state.flash * 1.6})`;
