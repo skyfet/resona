@@ -1,0 +1,186 @@
+{
+  "coordinate_system": "origin top-left; x increases right; y increases down; world units are canvas pixels on 320x180",
+  "mode": "playing",
+  "chapter": 4,
+  "chapter_name": "Chapter 4",
+  "objective": "Objective",
+  "story_line": "Story",
+  "player": {
+    "x": 1.11,
+    "y": 2.22,
+    "vx": 0.33,
+    "vy": 0.44,
+    "hp": 10,
+    "max_hp": 20,
+    "mana": 8.89,
+    "max_mana": 10,
+    "level": 3,
+    "invulnerable": true,
+    "cooldowns": {
+      "dodge": 0.01,
+      "basic": 0.02,
+      "wind_gust": 0.03,
+      "leaf_fall": 0.04,
+      "bridge_sprint": 0.05
+    }
+  },
+  "progress": {
+    "grandma_talked": true,
+    "village_passed": true,
+    "gathered_resources": "1/5",
+    "wolf_defeated": false,
+    "leaf_fall_unlocked": true,
+    "healer_found": true,
+    "healer_rescued": false,
+    "lake_quest_done": false,
+    "bridge_passed": true,
+    "organizer_talked": false,
+    "registration_complete": false,
+    "bats_defeated": false,
+    "skill_choice_made": true,
+    "recipe_read": false
+  },
+  "skills": {
+    "wind_gust": true,
+    "leaf_fall": false,
+    "direct_burst": false,
+    "poison_bloom": true
+  },
+  "inventory": {
+    "mint": 1,
+    "glass_stone": 2,
+    "wet_frog": 3,
+    "firefly": 4,
+    "dense_reed": 5,
+    "flax_seed": 6,
+    "fish_oil": 7,
+    "magic_fang": 8,
+    "healing_potion": 9,
+    "healing_recipe_scroll": 10
+  },
+  "recipe_book": {
+    "has_healing_recipe": true,
+    "learned_healing_potion": false,
+    "open": false
+  },
+  "enemies": [
+    {
+      "type": "old_forest_wolf",
+      "x": 11.11,
+      "y": 22.22,
+      "hp": 30
+    },
+    {
+      "type": "bat",
+      "x": 44.44,
+      "y": 55.56,
+      "hp": 13.33,
+      "dot_timer": 1.23
+    }
+  ],
+  "drops": [
+    {
+      "type": "coin",
+      "x": 7.78,
+      "y": 8.89
+    }
+  ],
+  "lakes": [
+    {
+      "x": 10,
+      "y": 10.1,
+      "r": 11.11
+    }
+  ],
+  "collectibles": [
+    {
+      "type": "herb",
+      "name": "mint",
+      "x": 12.12,
+      "y": 13.13
+    }
+  ],
+  "static_obstacles": [
+    {
+      "id": "obs",
+      "x": 1,
+      "y": 2,
+      "w": 3,
+      "h": 4
+    }
+  ],
+  "breakable_obstacles": [
+    {
+      "id": "br",
+      "name": "barrel",
+      "x": 5,
+      "y": 6,
+      "w": 7,
+      "h": 8,
+      "broken": false
+    }
+  ],
+  "save_points": [
+    {
+      "id": "save_1",
+      "x": 14.14,
+      "y": 15.15,
+      "activated": true
+    }
+  ],
+  "checkpoint": {
+    "id": "cp",
+    "chapter": 4,
+    "saved_at": null
+  },
+  "quests": {
+    "fish_oil": "2/8",
+    "bridge_elapsed": 2.35
+  },
+  "registration": {
+    "active": false,
+    "index": 0,
+    "score": 0
+  },
+  "skill_choice": {
+    "active": true,
+    "selected": "poison_bloom"
+  },
+  "gacha": {
+    "wish_tokens": 3,
+    "spins": 4,
+    "last_pull": "a",
+    "history": [
+      "a",
+      "b"
+    ],
+    "collection": {
+      "a": 1
+    },
+    "active_banner_id": "banner",
+    "menu_open": false,
+    "banner_open": true,
+    "character_menu_open": false,
+    "world_map_open": true
+  },
+  "party": {
+    "leader": "resona",
+    "members": [
+      "resona",
+      "ally"
+    ]
+  },
+  "combat_mods": {
+    "bonus_damage": 1,
+    "dot_damage": 2,
+    "damage_reduction": 3,
+    "ally_regen": 4
+  },
+  "healer": {
+    "x": 16.16,
+    "y": 17.17,
+    "rescued": false
+  },
+  "source_npcs": null,
+  "dialogue": "hello"
+}
