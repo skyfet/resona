@@ -87,6 +87,15 @@ function drawEnvironmentSprite(spriteKey, dx, dy, dw, dh) {
 
 const keysDown = new Set();
 const keysPressed = new Set();
+const ACTION = window.ResonaInputMap?.ACTION || {};
+const input = window.ResonaInput || {};
+
+if (input.bindInputState) {
+  input.bindInputState({ keysPressed });
+}
+
+const isActionPressed = input.isActionPressed || (() => false);
+const consumeAction = input.consumeAction || (() => false);
 
 const menuEntries = [
   {
@@ -509,16 +518,6 @@ function getPlayerDefense() {
 
 function keyDown(codes) {
   return codes.some((code) => keysDown.has(code));
-}
-
-function consumeKey(codes) {
-  for (const code of codes) {
-    if (keysPressed.has(code)) {
-      keysPressed.delete(code);
-      return true;
-    }
-  }
-  return false;
 }
 
 function setObjective(text) {
@@ -1887,10 +1886,10 @@ function travelToAdjacentChapter(direction) {
 }
 
 function checkGlobalKeys() {
-  if (consumeKey(["KeyF"])) {
+  if (consumeAction(ACTION.TOGGLE_FULLSCREEN)) {
     toggleFullscreen();
   }
-  if (consumeKey(["KeyM"]) && state.mode !== "menu" && !state.dialogue && !state.registration.active && !state.skillChoice.active) {
+  if (consumeAction(ACTION.OPEN_MENU) && state.mode !== "menu" && !state.dialogue && !state.registration.active && !state.skillChoice.active) {
     state.ui.menuOpen = !state.ui.menuOpen;
     if (!state.ui.menuOpen) {
       state.ui.gachaOpen = false;
@@ -1903,7 +1902,7 @@ function checkGlobalKeys() {
       setHint("Меню: P персонаж, I рюкзак, R книга, G баннеры, C коллекция.", 2.8);
     }
   }
-  if (consumeKey(["KeyP"]) && state.mode !== "menu") {
+  if (consumeAction(ACTION.OPEN_CHARACTER_MENU) && state.mode !== "menu") {
     state.ui.menuOpen = true;
     state.ui.characterMenuOpen = !state.ui.characterMenuOpen;
     if (state.ui.characterMenuOpen) {
@@ -1914,7 +1913,7 @@ function checkGlobalKeys() {
       setHint("Меню персонажей: 1/2/3 — вкладки, ←/→ выбор, Enter — применить.", 2.6);
     }
   }
-  if (consumeKey(["KeyI"]) && state.mode !== "menu") {
+  if (consumeAction(ACTION.OPEN_INVENTORY) && state.mode !== "menu") {
     state.ui.inventoryOpen = !state.ui.inventoryOpen;
     if (state.ui.inventoryOpen) {
       state.ui.worldMapOpen = false;
@@ -1922,7 +1921,7 @@ function checkGlobalKeys() {
       state.ui.collectionOpen = false;
     }
   }
-  if (consumeKey(["Tab"]) && state.mode !== "menu") {
+  if (consumeAction(ACTION.OPEN_WORLD_MAP) && state.mode !== "menu") {
     state.ui.worldMapOpen = !state.ui.worldMapOpen;
     if (state.ui.worldMapOpen) {
       state.ui.inventoryOpen = false;
@@ -1933,11 +1932,11 @@ function checkGlobalKeys() {
     }
   }
   if (state.ui.worldMapOpen) {
-    if (consumeKey(["ArrowLeft", "KeyA"])) moveMapSelection(-1);
-    if (consumeKey(["ArrowRight", "KeyD"])) moveMapSelection(1);
-    if (consumeKey(["Enter", "KeyE"])) fastTravelToSelection();
+    if (consumeAction(ACTION.NAV_LEFT)) moveMapSelection(-1);
+    if (consumeAction(ACTION.NAV_RIGHT)) moveMapSelection(1);
+    if (consumeAction(ACTION.INTERACT)) fastTravelToSelection();
   }
-  if (state.ui.menuOpen && consumeKey(["KeyC"])) {
+  if (state.ui.menuOpen && consumeAction(ACTION.OPEN_COLLECTION)) {
     state.ui.collectionOpen = !state.ui.collectionOpen;
     if (state.ui.collectionOpen) {
       state.ui.gachaOpen = false;
@@ -1946,14 +1945,14 @@ function checkGlobalKeys() {
     }
   }
   if (state.ui.characterMenuOpen) {
-    if (consumeKey(["Digit1"])) state.ui.menuTab = "characters";
-    if (consumeKey(["Digit2"])) state.ui.menuTab = "backpack";
-    if (consumeKey(["Digit3"])) state.ui.menuTab = "book";
-    if (consumeKey(["ArrowLeft", "KeyA"])) updateCharacterMenuSelection(-1);
-    if (consumeKey(["ArrowRight", "KeyD"])) updateCharacterMenuSelection(1);
-    if (consumeKey(["Enter", "KeyE"])) commitCharacterMenuSelection();
+    if (consumeAction(ACTION.MENU_TAB_CHARACTERS)) state.ui.menuTab = "characters";
+    if (consumeAction(ACTION.MENU_TAB_BACKPACK)) state.ui.menuTab = "backpack";
+    if (consumeAction(ACTION.MENU_TAB_BOOK)) state.ui.menuTab = "book";
+    if (consumeAction(ACTION.NAV_LEFT)) updateCharacterMenuSelection(-1);
+    if (consumeAction(ACTION.NAV_RIGHT)) updateCharacterMenuSelection(1);
+    if (consumeAction(ACTION.INTERACT)) commitCharacterMenuSelection();
   }
-  if (consumeKey(["Escape"])) {
+  if (consumeAction(ACTION.CLOSE_OR_BACK)) {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     } else if (state.ui.worldMapOpen) {
@@ -1970,7 +1969,7 @@ function checkGlobalKeys() {
       state.ui.menuOpen = false;
     }
   }
-  if (state.ui.menuOpen && consumeKey(["KeyG"])) {
+  if (state.ui.menuOpen && consumeAction(ACTION.OPEN_GACHA)) {
     state.ui.gachaOpen = !state.ui.gachaOpen;
     state.ui.gachaResultOpen = false;
     if (state.ui.gachaOpen) {
@@ -1984,7 +1983,7 @@ function checkGlobalKeys() {
     !state.dialogue &&
     !state.registration.active &&
     !state.skillChoice.active &&
-    consumeKey(["Enter"])
+    consumeAction(ACTION.MENU_CONFIRM)
   ) {
     if (!state.ui.menuOpen) {
       state.ui.menuOpen = true;
@@ -3266,33 +3265,44 @@ function update(dt) {
   updateSparks(dt);
   updateDynamicResourceSpawns(dt);
 
+  // Приоритет обработки режимов ввода:
+  // 1) menu mode
+  // 2) modal UI (inventory/map/character/collection)
+  // 3) dialogue/quiz/skill choice
+  // 4) pause menu (gacha / overlays внутри state.ui.menuOpen)
+  // 5) gameplay
+  //
+  // Таблица конфликтов (выбранное правило: приоритет текущего режима):
+  // - Enter: interact (геймплей) vs cast/confirm в меню/диалогах -> в UI и dialogue Enter не уходит в interact.
+  // - KeyA: nav left (UI) vs cast wind (геймплей) -> в UI всегда навигация, в gameplay — навык.
+  // - Space: dodge (геймплей) vs confirm result/dialogue -> в dialogue/pause-menu Space подтверждает UI.
   if (state.mode === "menu") return;
 
-
-  if (state.ui.inventoryOpen || state.ui.worldMapOpen || state.ui.characterMenuOpen || state.ui.collectionOpen) {
+  const hasModalUi = state.ui.inventoryOpen || state.ui.worldMapOpen || state.ui.characterMenuOpen || state.ui.collectionOpen;
+  if (hasModalUi) {
     return;
   }
 
   if (state.dialogue) {
-    if (consumeKey(["Enter", "KeyE", "Space"])) {
+    if (consumeAction(ACTION.DIALOGUE_ADVANCE)) {
       nextDialogueLine();
     }
     return;
   }
 
   if (state.registration.active) {
-    if (consumeKey(["KeyA", "KeyJ"])) {
+    if (consumeAction(ACTION.CHOOSE_OPTION_A)) {
       submitRegistrationAnswer("A");
-    } else if (consumeKey(["KeyB", "KeyK", "Enter"])) {
+    } else if (consumeAction(ACTION.CHOOSE_OPTION_B)) {
       submitRegistrationAnswer("B");
     }
     return;
   }
 
   if (state.skillChoice.active) {
-    if (consumeKey(["KeyA", "KeyJ"])) {
+    if (consumeAction(ACTION.CHOOSE_OPTION_A)) {
       chooseSkillOption("A");
-    } else if (consumeKey(["KeyB", "KeyK", "Enter"])) {
+    } else if (consumeAction(ACTION.CHOOSE_OPTION_B)) {
       chooseSkillOption("B");
     }
     return;
@@ -3301,10 +3311,10 @@ function update(dt) {
   if (state.ui.menuOpen) {
     if (state.ui.gachaOpen) {
       if (state.ui.gachaResultOpen) {
-        if (consumeKey(["Enter", "KeyE", "KeyO", "Space"])) {
+        if (consumeAction(ACTION.GACHA_CONFIRM)) {
           state.ui.gachaResultOpen = false;
         }
-      } else if (consumeKey(["KeyA", "KeyJ", "Enter"])) {
+      } else if (consumeAction(ACTION.GACHA_SPIN_ONE)) {
         if (runGachaSpins(1)) {
           state.ui.gachaResultOpen = true;
         }
@@ -3313,52 +3323,52 @@ function update(dt) {
     return;
   }
 
-  if (consumeKey(["KeyR"])) {
+  if (consumeAction(ACTION.CRAFT_RECIPE_BOOK)) {
     toggleRecipeBook();
   }
 
-  if (consumeKey(["KeyH"])) {
+  if (consumeAction(ACTION.CRAFT_POTION)) {
     tryCraftPotion();
   }
 
-  if (consumeKey(["KeyU"])) {
+  if (consumeAction(ACTION.USE_POTION)) {
     tryUsePotion();
   }
 
-  if (consumeKey(["KeyY"])) {
+  if (consumeAction(ACTION.CRAFT_JAR)) {
     tryCraftJar();
   }
 
-  if (consumeKey(["KeyT"])) {
+  if (consumeAction(ACTION.SWAP_HERO)) {
     trySwapHero();
   }
 
-  if (consumeKey(["Space"])) {
+  if (consumeAction(ACTION.DODGE)) {
     tryBridgeSprint();
   }
 
   applyPlayerMovement(dt);
 
-  let enterPressed = consumeKey(["Enter"]);
+  let enterPressed = consumeAction(ACTION.MENU_CONFIRM);
   const useLeafByEnter = enterPressed && shouldEnterCastLeafFall();
   if (useLeafByEnter) {
     tryLeafFall();
     enterPressed = false;
   }
 
-  if (consumeKey(["KeyL"])) {
+  if (consumeAction(ACTION.CAST_LEAF)) {
     tryLeafFall();
   }
 
-  if (consumeKey(["KeyJ", "KeyB"])) {
+  if (consumeAction(ACTION.ATTACK_BASIC)) {
     tryBasicAttack();
   }
 
-  if (consumeKey(["KeyK", "KeyA"])) {
+  if (consumeAction(ACTION.CAST_WIND)) {
     tryWindGust();
   }
 
-  if (consumeKey(["KeyE"])) {
+  if (consumeAction(ACTION.INTERACT)) {
     tryInteract();
   }
 
