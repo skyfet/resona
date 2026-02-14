@@ -1,0 +1,58 @@
+{
+  "currencies": [
+    {
+      "id": "wish_token",
+      "name": "WishToken",
+      "icon_path": "placeholder://wish-token"
+    }
+  ],
+  "weapons": [
+    {
+      "id": "weapon_a",
+      "name": "Weapon_A",
+      "icon_path": "placeholder://weapon-a"
+    },
+    {
+      "id": "weapon_b",
+      "name": "Weapon_B",
+      "icon_path": "placeholder://weapon-b"
+    }
+  ],
+  "characters": [
+    {
+      "id": "char_liora",
+      "name": "Травница Лиора",
+      "icon_path": "placeholder://char-liora"
+    },
+    {
+      "id": "char_aerin",
+      "name": "Следопыт Аэрин",
+      "icon_path": "placeholder://char-aerin"
+    },
+    {
+      "id": "char_miri",
+      "name": "Друидка Мири",
+      "icon_path": "placeholder://char-miri"
+    }
+  ],
+  "banners": [
+    {
+      "banner_id": "standard_forest",
+      "title": "Стандартный лесной баннер",
+      "description": "Базовый набор наград. Персонаж выпадает с шансом 10%, иначе оружие.",
+      "art_path": "placeholder://forest-banner-art",
+      "cost_currency_id": "wish_token",
+      "cost_amount": 1,
+      "character_chance": 0.1,
+      "weapon_pool": [
+        { "id": "weapon_a", "weight": 1 },
+        { "id": "weapon_b", "weight": 1 }
+      ],
+      "character_pool": [
+        { "id": "char_liora", "weight": 4 },
+        { "id": "char_aerin", "weight": 3 },
+        { "id": "char_miri", "weight": 3 }
+      ]
+    }
+  ]
+}
