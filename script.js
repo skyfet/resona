@@ -545,6 +545,15 @@ function deepCopy(data) {
   return JSON.parse(JSON.stringify(data));
 }
 
+function applyWhitelistedFields(target, source, fields) {
+  if (!target || !source) return;
+  for (const field of fields) {
+    if (Object.prototype.hasOwnProperty.call(source, field) && source[field] !== undefined) {
+      target[field] = deepCopy(source[field]);
+    }
+  }
+}
+
 function withStorage(callback) {
   try {
     return callback(window.localStorage);
@@ -574,13 +583,17 @@ function readStoredCheckpoint() {
 
   try {
     const parsed = JSON.parse(raw);
+    if (typeof utils.deserializeCheckpoint === "function") {
+      return utils.deserializeCheckpoint(parsed);
+    }
     if (typeof utils.sanitizeCheckpointSnapshot === "function") {
-      return utils.sanitizeCheckpointSnapshot(parsed);
+      const sanitized = utils.sanitizeCheckpointSnapshot(parsed);
+      return sanitized ? { persistableState: sanitized.persistableState, runtimeState: {} } : null;
     }
     if (!parsed || typeof parsed !== "object") return null;
     if (typeof parsed.chapter !== "number") return null;
     if (!parsed.player || !parsed.inventory) return null;
-    return parsed;
+    return { persistableState: parsed, runtimeState: {} };
   } catch {
     return null;
   }
@@ -600,82 +613,59 @@ function markActiveSavePoint(savePointId) {
 }
 
 function buildCheckpointSnapshot(savePointId) {
+  if (typeof utils.serializeCheckpoint === "function") {
+    return utils.serializeCheckpoint(state, savePointId);
+  }
+
   return {
-    version: 1,
+    version: 2,
     savedAt: Date.now(),
     savePointId,
-    chapter: state.chapter,
-    maxChapterUnlocked: state.maxChapterUnlocked,
-    mode: state.mode,
-    objective: state.objective,
-    hint: state.hint,
-    storyLine: state.storyLine,
-    gatherGoal: state.gatherGoal,
-    gathered: state.gathered,
-    lakeQuest: deepCopy(state.lakeQuest),
-    flags: deepCopy(state.flags),
-    skills: deepCopy(state.skills),
-    player: {
-      x: state.player.x,
-      y: state.player.y,
-      dirX: state.player.dirX,
-      dirY: state.player.dirY,
-      speed: state.player.speed,
-      hp: state.player.hp,
-      maxHp: state.player.maxHp,
-      mana: state.player.mana,
-      maxMana: state.player.maxMana,
-      level: state.player.level,
-      bridgeSprint: state.player.bridgeSprint,
-    },
-    combatMods: deepCopy(state.combatMods),
-    ui: deepCopy(state.ui),
-    inventory: deepCopy(state.inventory),
-    recipeBook: deepCopy(state.recipeBook),
-    loadout: deepCopy(state.loadout),
-    collectibles: deepCopy(state.collectibles),
-    obstacles: deepCopy(state.obstacles),
-    breakables: deepCopy(state.breakables),
-    lakes: deepCopy(state.lakes),
-    enemies: deepCopy(state.enemies),
-    drops: deepCopy(state.drops),
-    wolf: state.wolf ? deepCopy(state.wolf) : null,
-    bridgeChallenge: deepCopy(state.bridgeChallenge),
-    resourceSpawner: deepCopy(state.resourceSpawner),
-    registration: deepCopy(state.registration),
-    skillChoice: deepCopy(state.skillChoice),
-    gacha: {
-      wishTokens: state.gacha.wishTokens,
-      spins: state.gacha.spins,
-      lastPull: deepCopy(state.gacha.lastPull),
-      lastResults: deepCopy(state.gacha.lastResults),
-      collection: deepCopy(state.gacha.collection),
-      activeBannerId: state.gacha.activeBannerId,
+    persistableState: {
+      chapter: state.chapter,
+      maxChapterUnlocked: state.maxChapterUnlocked,
+      mode: state.mode,
+      objective: state.objective,
+      hint: state.hint,
+      storyLine: state.storyLine,
+      gatherGoal: state.gatherGoal,
+      gathered: state.gathered,
+      lakeQuest: deepCopy(state.lakeQuest),
+      flags: deepCopy(state.flags),
+      skills: deepCopy(state.skills),
+      player: deepCopy(state.player),
+      combatMods: deepCopy(state.combatMods),
+      inventory: deepCopy(state.inventory),
+      recipeBook: deepCopy(state.recipeBook),
+      loadout: deepCopy(state.loadout),
+      bridgeChallenge: deepCopy(state.bridgeChallenge),
+      registration: deepCopy(state.registration),
+      skillChoice: deepCopy(state.skillChoice),
+      gacha: deepCopy(state.gacha),
     },
   };
 }
 
 function applyCheckpointSnapshot(snapshot, options = {}) {
   const revive = options.revive === true;
-  if (!snapshot || typeof snapshot.chapter !== "number") return false;
+  const checkpoint = snapshot && snapshot.persistableState ? snapshot : { persistableState: snapshot, runtimeState: {} };
+  const persisted = checkpoint.persistableState;
+  if (!persisted || typeof persisted.chapter !== "number") return false;
 
   menuNode.classList.add("hidden");
   state.mode = "play";
-  gotoChapter(snapshot.chapter);
+  gotoChapter(persisted.chapter);
 
-  state.mode = snapshot.mode || "play";
-  state.gatherGoal = typeof snapshot.gatherGoal === "number" ? snapshot.gatherGoal : 3;
-  state.gathered = typeof snapshot.gathered === "number" ? snapshot.gathered : 0;
-  if (snapshot.lakeQuest) {
-    state.lakeQuest.fishOilGoal = snapshot.lakeQuest.fishOilGoal ?? state.lakeQuest.fishOilGoal;
-    state.lakeQuest.fishOilCollected =
-      snapshot.lakeQuest.fishOilCollected ?? state.lakeQuest.fishOilCollected;
+  state.mode = persisted.mode || "play";
+  state.gatherGoal = typeof persisted.gatherGoal === "number" ? persisted.gatherGoal : 3;
+  state.gathered = typeof persisted.gathered === "number" ? persisted.gathered : 0;
+  if (persisted.lakeQuest) {
+    applyWhitelistedFields(state.lakeQuest, persisted.lakeQuest, ["fishOilGoal", "fishOilCollected"]);
   }
 
-  Object.assign(state.flags, snapshot.flags || {});
-  Object.assign(state.skills, snapshot.skills || {});
-  Object.assign(state.combatMods, snapshot.combatMods || {});
-  Object.assign(state.ui, snapshot.ui || {});
+  applyWhitelistedFields(state.flags, persisted.flags, Object.keys(state.flags));
+  applyWhitelistedFields(state.skills, persisted.skills, Object.keys(state.skills));
+  applyWhitelistedFields(state.combatMods, persisted.combatMods, Object.keys(state.combatMods));
   if (typeof state.ui.inventoryOpen !== "boolean") state.ui.inventoryOpen = false;
   if (typeof state.ui.worldMapOpen !== "boolean") state.ui.worldMapOpen = false;
   if (typeof state.ui.characterMenuOpen !== "boolean") state.ui.characterMenuOpen = false;
@@ -686,62 +676,35 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
     state.party = { leader: "Листи", members: [] };
   }
   if (!Array.isArray(state.party.members)) state.party.members = [];
-  Object.assign(state.inventory, snapshot.inventory || {});
-  Object.assign(state.recipeBook, snapshot.recipeBook || {});
-  Object.assign(state.loadout, snapshot.loadout || {});
+  applyWhitelistedFields(state.inventory, persisted.inventory, Object.keys(state.inventory));
+  applyWhitelistedFields(state.recipeBook, persisted.recipeBook, ["hasHealingRecipe", "learnedHealingPotion"]);
+  applyWhitelistedFields(state.loadout, persisted.loadout, Object.keys(state.loadout));
 
-  if (snapshot.player) {
-    state.player.x = snapshot.player.x ?? state.player.x;
-    state.player.y = snapshot.player.y ?? state.player.y;
-    state.player.dirX = snapshot.player.dirX ?? state.player.dirX;
-    state.player.dirY = snapshot.player.dirY ?? state.player.dirY;
-    state.player.speed = snapshot.player.speed ?? state.player.speed;
-    state.player.maxHp = snapshot.player.maxHp ?? state.player.maxHp;
-    state.player.maxMana = snapshot.player.maxMana ?? state.player.maxMana;
-    state.player.level = snapshot.player.level ?? state.player.level;
-    state.player.hp = snapshot.player.hp ?? state.player.hp;
-    state.player.mana = snapshot.player.mana ?? state.player.mana;
-    state.player.bridgeSprint = snapshot.player.bridgeSprint ?? state.player.bridgeSprint;
-  }
+  applyWhitelistedFields(state.player, persisted.player, [
+    "x",
+    "y",
+    "dirX",
+    "dirY",
+    "speed",
+    "maxHp",
+    "maxMana",
+    "level",
+    "hp",
+    "mana",
+    "bridgeSprint",
+  ]);
 
-  state.collectibles = Array.isArray(snapshot.collectibles) ? deepCopy(snapshot.collectibles) : [];
-  state.obstacles = Array.isArray(snapshot.obstacles) ? deepCopy(snapshot.obstacles) : [];
-  state.breakables = Array.isArray(snapshot.breakables) ? deepCopy(snapshot.breakables) : [];
-  state.lakes = Array.isArray(snapshot.lakes) ? deepCopy(snapshot.lakes) : [];
-  state.enemies = Array.isArray(snapshot.enemies) ? deepCopy(snapshot.enemies) : [];
-  state.drops = Array.isArray(snapshot.drops) ? deepCopy(snapshot.drops) : [];
-  state.wolf = snapshot.wolf ? deepCopy(snapshot.wolf) : null;
-  if (snapshot.bridgeChallenge) {
-    Object.assign(state.bridgeChallenge, snapshot.bridgeChallenge);
-  }
-  if (snapshot.resourceSpawner) {
-    Object.assign(state.resourceSpawner, snapshot.resourceSpawner);
-  }
-  if (snapshot.registration) {
-    state.registration.active = snapshot.registration.active ?? false;
-    state.registration.index = snapshot.registration.index ?? 0;
-    state.registration.score = snapshot.registration.score ?? 0;
-  }
-  if (snapshot.skillChoice) {
-    state.skillChoice.active = snapshot.skillChoice.active ?? false;
-    state.skillChoice.selected = snapshot.skillChoice.selected ?? null;
-  }
-  if (snapshot.gacha) {
-    state.gacha.wishTokens = snapshot.gacha.wishTokens ?? state.gacha.wishTokens;
-    state.gacha.spins = snapshot.gacha.spins ?? state.gacha.spins;
-    state.gacha.lastPull = snapshot.gacha.lastPull ? deepCopy(snapshot.gacha.lastPull) : state.gacha.lastPull;
-    state.gacha.lastResults = Array.isArray(snapshot.gacha.lastResults)
-      ? deepCopy(snapshot.gacha.lastResults).slice(0, 10)
-      : state.gacha.lastResults;
-    if (snapshot.gacha.collection) {
-      state.gacha.collection.characters = Array.isArray(snapshot.gacha.collection.characters)
-        ? deepCopy(snapshot.gacha.collection.characters)
-        : state.gacha.collection.characters;
-      state.gacha.collection.weapons = snapshot.gacha.collection.weapons
-        ? deepCopy(snapshot.gacha.collection.weapons)
-        : state.gacha.collection.weapons;
+  applyWhitelistedFields(state.bridgeChallenge, persisted.bridgeChallenge, ["elapsed", "failures"]);
+  applyWhitelistedFields(state.registration, persisted.registration, ["active", "index", "score"]);
+  applyWhitelistedFields(state.skillChoice, persisted.skillChoice, ["active", "selected"]);
+  if (persisted.gacha) {
+    applyWhitelistedFields(state.gacha, persisted.gacha, ["wishTokens", "spins", "lastPull", "lastResults", "activeBannerId"]);
+    if (persisted.gacha.collection) {
+      state.gacha.collection = deepCopy(persisted.gacha.collection);
     }
-    state.gacha.activeBannerId = snapshot.gacha.activeBannerId ?? state.gacha.activeBannerId;
+    if (Array.isArray(state.gacha.lastResults)) {
+      state.gacha.lastResults = state.gacha.lastResults.slice(0, 10);
+    }
   }
 
   state.player.vx = 0;
@@ -770,10 +733,10 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
   state.ui.weaponSelection = 0;
   state.ui.amuletSelection = 0;
 
-  state.objective = snapshot.objective || state.objective;
-  state.hint = snapshot.hint || "-";
-  if (snapshot.storyLine) {
-    setStoryLine(snapshot.storyLine, 2.2);
+  state.objective = persisted.objective || state.objective;
+  state.hint = persisted.hint || "-";
+  if (persisted.storyLine) {
+    setStoryLine(persisted.storyLine, 2.2);
   }
 
   if (revive) {
@@ -783,12 +746,12 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
     setStoryLine("Сила кристалла вернула её в безопасное место.", 2.8);
   }
 
-  state.maxChapterUnlocked = Math.max(snapshot.maxChapterUnlocked ?? snapshot.chapter, snapshot.chapter);
+  state.maxChapterUnlocked = Math.max(persisted.maxChapterUnlocked ?? persisted.chapter, persisted.chapter);
   state.mapSelection = state.chapter;
 
-  state.checkpointMeta.id = snapshot.savePointId || null;
-  state.checkpointMeta.chapter = snapshot.chapter;
-  state.checkpointMeta.savedAt = snapshot.savedAt || Date.now();
+  state.checkpointMeta.id = checkpoint.savePointId || null;
+  state.checkpointMeta.chapter = persisted.chapter;
+  state.checkpointMeta.savedAt = checkpoint.savedAt || Date.now();
   if (state.checkpointMeta.id) {
     markActiveSavePoint(state.checkpointMeta.id);
   }
@@ -810,7 +773,7 @@ function saveCheckpoint(savePointId) {
 
   state.checkpointMeta.id = savePointId;
   state.checkpointMeta.chapter = state.chapter;
-  state.checkpointMeta.savedAt = snapshot.savedAt;
+  state.checkpointMeta.savedAt = snapshot.savedAt || Date.now();
   markActiveSavePoint(savePointId);
   updateContinueButtonVisibility();
   setHint("Точка сохранения активирована.", 2.4);
