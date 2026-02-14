@@ -24,6 +24,8 @@ const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
 const STEP = 1 / 60;
 const CHECKPOINT_STORAGE_KEY = "resona_checkpoint_v1";
+const utils = window.ResonaUtils || {};
+
 
 const chapterNames = {
   0: "Единая долина • Дом",
@@ -486,6 +488,9 @@ function readStoredCheckpoint() {
 
   try {
     const parsed = JSON.parse(raw);
+    if (typeof utils.sanitizeCheckpointSnapshot === "function") {
+      return utils.sanitizeCheckpointSnapshot(parsed);
+    }
     if (!parsed || typeof parsed !== "object") return null;
     if (typeof parsed.chapter !== "number") return null;
     if (!parsed.player || !parsed.inventory) return null;
@@ -782,6 +787,9 @@ function getCharacterDefById(id) {
 }
 
 function pickByWeight(pool) {
+  if (typeof utils.pickByWeight === "function") {
+    return utils.pickByWeight(pool, Math.random);
+  }
   if (!Array.isArray(pool) || pool.length === 0) return null;
   const totalWeight = pool.reduce((sum, entry) => sum + Math.max(0, entry.weight || 0), 0);
   if (totalWeight <= 0) return pool[0];
@@ -851,12 +859,17 @@ function runGachaSpins(spins) {
   }
 
   let completed = 0;
+  let failedByPool = false;
   for (let i = 0; i < spins; i += 1) {
     if (state.gacha.wishTokens < banner.cost_amount) break;
     state.gacha.wishTokens -= banner.cost_amount;
 
     const result = rollFromBanner(banner);
-    if (!result) break;
+    if (!result) {
+      failedByPool = true;
+      state.gacha.wishTokens += banner.cost_amount;
+      break;
+    }
 
     applyGachaReward(result);
     pushGachaHistory(result);
@@ -866,7 +879,11 @@ function runGachaSpins(spins) {
   }
 
   if (completed === 0) {
-    setHint("Недостаточно WishToken для крутки.", 2);
+    if (failedByPool) {
+      setHint("Баннер настроен некорректно: не удалось выбрать награду.", 2.4);
+    } else {
+      setHint("Недостаточно WishToken для крутки.", 2);
+    }
     return false;
   }
 
