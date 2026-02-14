@@ -49,6 +49,9 @@ const chapterMapNodes = {
   9: { name: "Штаб", x: 294, y: 116, status: "quest" },
 };
 
+
+const worldRoute = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
 const keysDown = new Set();
 const keysPressed = new Set();
 
@@ -279,6 +282,8 @@ const state = {
     worldMapOpen: false,
     characterMenuOpen: false,
   },
+  maxChapterUnlocked: 0,
+  mapSelection: 0,
   party: {
     leader: "Листи",
     members: [],
@@ -516,6 +521,7 @@ function buildCheckpointSnapshot(savePointId) {
     savedAt: Date.now(),
     savePointId,
     chapter: state.chapter,
+    maxChapterUnlocked: state.maxChapterUnlocked,
     mode: state.mode,
     objective: state.objective,
     hint: state.hint,
@@ -667,6 +673,9 @@ function applyCheckpointSnapshot(snapshot, options = {}) {
     setHint("Эльфийка вернулась к последней точке сохранения.", 2.6);
     setStoryLine("Сила кристалла вернула её в безопасное место.", 2.8);
   }
+
+  state.maxChapterUnlocked = Math.max(snapshot.maxChapterUnlocked ?? snapshot.chapter, snapshot.chapter);
+  state.mapSelection = state.chapter;
 
   state.checkpointMeta.id = snapshot.savePointId || null;
   state.checkpointMeta.chapter = snapshot.chapter;
@@ -1221,12 +1230,16 @@ function resetAdventureState() {
   state.leafBursts = [];
   state.sparks = [];
   state.dialogue = null;
+  state.maxChapterUnlocked = 0;
+  state.mapSelection = 0;
 
   gotoChapter(0);
 }
 
 function gotoChapter(chapter) {
   state.chapter = chapter;
+  state.maxChapterUnlocked = Math.max(state.maxChapterUnlocked || 0, chapter);
+  state.mapSelection = chapter;
   state.projectiles.length = 0;
   state.leafBursts.length = 0;
   state.sparks.length = 0;
@@ -1588,6 +1601,48 @@ function resizeCanvasDisplay() {
   canvas.style.height = `${Math.floor(displayHeight)}px`;
 }
 
+
+function unlockedWorldNodes() {
+  return worldRoute.filter((chapter) => chapter <= (state.maxChapterUnlocked || 0));
+}
+
+function moveMapSelection(direction) {
+  const unlocked = unlockedWorldNodes();
+  if (!unlocked.length) return;
+  let index = unlocked.indexOf(state.mapSelection);
+  if (index < 0) index = unlocked.indexOf(state.chapter);
+  if (index < 0) index = unlocked.length - 1;
+  index = (index + direction + unlocked.length) % unlocked.length;
+  state.mapSelection = unlocked[index];
+}
+
+function fastTravelToSelection() {
+  const target = state.mapSelection;
+  if (typeof target !== "number") return;
+  if (target === state.chapter) {
+    setHint("Вы уже в выбранной области.", 1.5);
+    return;
+  }
+  if (target > (state.maxChapterUnlocked || 0)) {
+    setHint("Эта область пока не открыта.", 1.8);
+    return;
+  }
+  gotoChapter(target);
+  setHint("Быстрый переход: карта перенесла Листи в выбранную область.", 2.4);
+}
+
+function travelToAdjacentChapter(direction) {
+  const target = state.chapter + direction;
+  if (target < 1 || target > 9) return false;
+  if (target > (state.maxChapterUnlocked || 0)) return false;
+  const fromY = state.player.y;
+  gotoChapter(target);
+  const b = state.worldBounds;
+  state.player.x = direction > 0 ? b.x + 6 : b.x + b.w - 6;
+  state.player.y = clamp(fromY, b.y + 4, b.y + b.h - 4);
+  return true;
+}
+
 function checkGlobalKeys() {
   if (consumeKey(["KeyF"])) {
     toggleFullscreen();
@@ -1615,8 +1670,14 @@ function checkGlobalKeys() {
     if (state.ui.worldMapOpen) {
       state.ui.inventoryOpen = false;
       state.ui.characterMenuOpen = false;
-      setHint("Карта: Tab — закрыть, активная глава подсвечена.", 2.2);
+      state.mapSelection = state.chapter;
+      setHint("Карта: ←/→ выбрать область, Enter — быстрый переход.", 2.4);
     }
+  }
+  if (state.ui.worldMapOpen) {
+    if (consumeKey(["ArrowLeft", "KeyA"])) moveMapSelection(-1);
+    if (consumeKey(["ArrowRight", "KeyD"])) moveMapSelection(1);
+    if (consumeKey(["Enter", "KeyE"])) fastTravelToSelection();
   }
   if (state.ui.menuOpen && consumeKey(["KeyC"])) {
     state.ui.characterMenuOpen = !state.ui.characterMenuOpen;
@@ -2668,6 +2729,10 @@ function tryInteract() {
 }
 
 function updateChapterTransitions(dt) {
+  if (state.chapter >= 2 && state.player.x < 10) {
+    if (travelToAdjacentChapter(-1)) return;
+  }
+
   if (state.chapter === 1) {
     if (state.player.x > 306) {
       gotoChapter(2);
@@ -2757,8 +2822,12 @@ function updateChapterTransitions(dt) {
   if (state.chapter === 7) {
     collectNearbyResources();
     if (state.player.x > 306) {
-      state.player.x = 306;
-      setHint("Сначала поговорите с организатором и пройдите регистрацию.", 2);
+      if (state.flags.registrationComplete) {
+        gotoChapter(8);
+      } else {
+        state.player.x = 306;
+        setHint("Сначала поговорите с организатором и пройдите регистрацию.", 2);
+      }
     }
     return;
   }
@@ -2775,6 +2844,10 @@ function updateChapterTransitions(dt) {
       state.player.x = 74;
       state.player.y = 104;
       setHint("Эльфийка перехватила дыхание и снова вступила в бой.", 2.2);
+    }
+
+    if (state.player.x > 306 && state.flags.skillChoiceMade) {
+      gotoChapter(9);
     }
     return;
   }
@@ -3656,14 +3729,16 @@ function drawWorldMapPanel() {
   for (let chapter = 0; chapter <= 9; chapter += 1) {
     const node = chapterMapNodes[chapter];
     if (!node) continue;
-    const unlocked = chapter <= state.chapter;
+    const unlocked = chapter <= (state.maxChapterUnlocked || 0);
     const isCurrent = chapter === state.chapter;
+    const isSelected = chapter === state.mapSelection;
     let color = "#5a6f65";
     if (node.status === "danger") color = "#a75c5c";
     if (node.status === "quest") color = "#9a7ebd";
     if (node.status === "travel") color = "#75a98a";
     if (!unlocked) color = "#3f4a45";
     if (isCurrent) color = "#f2d37d";
+    if (isSelected && !isCurrent) color = "#9fe7cf";
 
     ctx.fillStyle = color;
     ctx.fillRect(node.x - 2, node.y - 2, 5, 5);
@@ -3683,7 +3758,7 @@ function drawWorldMapPanel() {
 
   ctx.fillStyle = "#bcd8c7";
   ctx.font = '7px "Lucida Console", "Courier New", monospace';
-  ctx.fillText("Жёлтый: текущая глава | Тёмный: закрыто", 24, 152);
+  ctx.fillText("Жёлтый: вы здесь | Мятный: выбор | Enter: перейти", 24, 152);
 }
 
 function drawCharacterMenuPanel() {
