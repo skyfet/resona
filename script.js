@@ -57,6 +57,11 @@ const chapterMapNodes = {
 
 const worldRoute = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+const chapterDefinitions = (window.ChapterDefinitions || []).reduce((acc, chapter) => {
+  acc[chapter.id] = chapter;
+  return acc;
+}, {});
+
 const environmentSpriteSheet = new Image();
 environmentSpriteSheet.src = "assets/environment-sprites.svg";
 
@@ -1256,35 +1261,6 @@ function deepForestBreakables() {
   ];
 }
 
-function chapterSavePoints(chapter) {
-  if (chapter === 1) {
-    return [{ id: "village_well", chapter: 1, x: 170, y: 96, radius: 14, activated: false }];
-  }
-  if (chapter === 2) {
-    return [{ id: "trail_crystal", chapter: 2, x: 148, y: 96, radius: 14, activated: false }];
-  }
-  if (chapter === 3) {
-    return [{ id: "wolf_watch", chapter: 3, x: 62, y: 96, radius: 14, activated: false }];
-  }
-  if (chapter === 4) {
-    return [{ id: "deep_circle", chapter: 4, x: 108, y: 104, radius: 14, activated: false }];
-  }
-  if (chapter === 5) {
-    return [{ id: "lake_stone", chapter: 5, x: 38, y: 94, radius: 14, activated: false }];
-  }
-  if (chapter === 6) {
-    drawWorldDecorLayer(chapter, "back");
-    return [{ id: "bridge_gate", chapter: 6, x: 30, y: 94, radius: 14, activated: false }];
-  }
-  if (chapter === 7) {
-    return [{ id: "mush_ring", chapter: 7, x: 78, y: 102, radius: 14, activated: false }];
-  }
-  if (chapter === 8) {
-    return [{ id: "source_plaza", chapter: 8, x: 86, y: 102, radius: 14, activated: false }];
-  }
-  return [];
-}
-
 function resetAdventureState() {
   state.time = 0;
   state.mode = "play";
@@ -1412,13 +1388,26 @@ function resetAdventureState() {
 }
 
 function gotoChapter(chapter) {
+  const chapterDefinition = chapterDefinitions[chapter];
+  if (!chapterDefinition) return;
+
   state.chapter = chapter;
   state.maxChapterUnlocked = Math.max(state.maxChapterUnlocked || 0, chapter);
   state.mapSelection = chapter;
+
   state.projectiles.length = 0;
   state.leafBursts.length = 0;
   state.sparks.length = 0;
   state.dialogue = null;
+  state.collectibles = [];
+  state.obstacles = [];
+  state.breakables = [];
+  state.lakes = [];
+  state.enemies = [];
+  state.drops = [];
+  state.wolf = null;
+  state.savePoints = [];
+
   applyLoadoutStats();
   state.registration.active = false;
   state.registration.index = 0;
@@ -1430,221 +1419,11 @@ function gotoChapter(chapter) {
   state.ui.worldMapOpen = false;
   state.ui.characterMenuOpen = false;
   state.recipeBook.open = false;
-  state.savePoints = chapterSavePoints(chapter);
+
+  chapterDefinition.setup(state);
+
   if (state.checkpointMeta.id && state.checkpointMeta.chapter === chapter) {
     markActiveSavePoint(state.checkpointMeta.id);
-  }
-
-  if (chapter === 0) {
-    state.worldBounds = { x: 24, y: 34, w: 272, h: 134 };
-    state.player.x = 64;
-    state.player.y = 124;
-    state.collectibles = [];
-    state.obstacles = [];
-    state.breakables = [];
-    state.lakes = [];
-    state.enemies = [];
-    state.drops = [];
-    state.wolf = null;
-    setObjective("Поговорите с бабушкой Нурсой (E). ");
-    setHint("Подойдите к Нурсе у очага.", 3);
-    setStoryLine("Листи весь день чувствует нестабильность энергии источника и не может найти себе места.");
-    return;
-  }
-
-  if (chapter === 1) {
-    state.worldBounds = { x: 8, y: 18, w: 304, h: 154 };
-    state.player.x = 24;
-    state.player.y = 98;
-    state.collectibles = [];
-    state.obstacles = [
-      { id: "village_cart", x: 118, y: 62, w: 16, h: 12, colorDark: "#5c3f29", colorLight: "#7a5335" },
-      { id: "village_barrel", x: 206, y: 108, w: 12, h: 12, colorDark: "#5c3f29", colorLight: "#7a5335" },
-    ];
-    state.breakables = [];
-    state.lakes = [];
-    state.enemies = [];
-    state.drops = [];
-    state.wolf = null;
-    setupAmbientSpawner(false);
-    setObjective("Пройдите через маленькую деревню и выйдите на тропу.");
-    setHint("Двигайтесь вправо по дороге.", 2.6);
-    setStoryLine("Листи выбежала из дома и прошла через сонную деревню, прислушиваясь к дрожи в воздухе.");
-    return;
-  }
-
-  if (chapter === 2) {
-    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
-    state.player.x = 24;
-    state.player.y = 96;
-    state.collectibles = trailCollectibles();
-    state.obstacles = [
-      { id: "trail_stone_1", x: 106, y: 56, w: 14, h: 10, colorDark: "#434d58", colorLight: "#687382" },
-      { id: "trail_stone_2", x: 198, y: 120, w: 14, h: 10, colorDark: "#434d58", colorLight: "#687382" },
-    ];
-    state.breakables = [];
-    state.lakes = [];
-    state.enemies = [];
-    state.drops = [];
-    state.wolf = null;
-    setupAmbientSpawner(false);
-    setObjective(`Соберите ресурсы на тропе (${state.gathered}/${state.gatherGoal}).`);
-    setHint("Ищите мяту, стеклянные камни и влажных лягушек.", 3);
-    setStoryLine("На тропе блестят стеклянные камни и шуршит мята.");
-    return;
-  }
-
-  if (chapter === 3) {
-    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
-    state.player.x = 34;
-    state.player.y = 96;
-    state.obstacles = [];
-    state.lakes = [];
-    state.enemies = [];
-    state.drops = [];
-    state.wolf = {
-      x: 246,
-      y: 96,
-      hp: 84,
-      maxHp: 84,
-      speed: 24,
-      attackCooldown: 0,
-      hitFlash: 0,
-      alive: true,
-    };
-    state.collectibles = [];
-    state.breakables = wolfPassBreakables();
-    setupAmbientSpawner(false);
-    setObjective("Победите волка: J/B - удар, K/A - «Порыв ветра», Space - уворот.");
-    setHint("Магия тратит ману. Следите за флаконом справа.", 3.2);
-    setStoryLine("Старый волк с большими лапами преградил путь и рычанием заглушил ветер в кронах.");
-    return;
-  }
-
-  if (chapter === 4) {
-    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
-    state.player.x = 24;
-    state.player.y = 104;
-    state.wolf = null;
-    state.lakes = [];
-    state.enemies = [];
-    state.drops = [];
-    state.collectibles = deepForestCollectibles();
-    state.obstacles = [
-      { id: "deep_stump", x: 94, y: 72, w: 20, h: 14, colorDark: "#4e3525", colorLight: "#6d4a31" },
-      { id: "deep_rock", x: 168, y: 132, w: 18, h: 12, colorDark: "#38404a", colorLight: "#596474" },
-    ];
-    state.breakables = deepForestBreakables();
-    setupAmbientSpawner(false);
-    setObjective("Осмотрите заваленное дерево рядом с одеждой (E). ");
-    setHint("Найдите травницу в правой части леса.", 3);
-    setStoryLine("В чаще лежит разорванная одежда, а под деревом слышен слабый голос, зовущий о помощи.");
-    return;
-  }
-
-  if (chapter === 5) {
-    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
-    state.player.x = 24;
-    state.player.y = 94;
-    state.wolf = null;
-    state.lakes = lakeSpawnPoints();
-    state.enemies = [];
-    state.drops = [];
-    state.collectibles = chapterFiveResources();
-    state.obstacles = lakeObstacleLayout();
-    state.breakables = [];
-    state.lakeQuest.fishOilCollected = 0;
-    setupAmbientSpawner(true);
-    setObjective("У озёр победите монстров и соберите рыбий жир (0/3).");
-    setHint("Новые ресурсы появляются с разной частотой: светлячки, камыш, семена льна.", 3.4);
-    setStoryLine("Из озёр поднимаются твари, и каждая волна приносит новую угрозу. Рыбий жир пригодится для укрепления маны.");
-    return;
-  }
-
-  if (chapter === 6) {
-    state.worldBounds = { x: 8, y: 34, w: 304, h: 108 };
-    state.player.x = 22;
-    state.player.y = 94;
-    state.wolf = null;
-    state.lakes = [];
-    state.enemies = [];
-    state.drops = [];
-    state.collectibles = [];
-    state.obstacles = [];
-    state.breakables = [];
-    state.bridgeChallenge.active = true;
-    state.bridgeChallenge.elapsed = 0;
-    state.bridgeChallenge.sprintCooldown = 0;
-    state.bridgeChallenge.planks = buildBridgePlanks();
-    setupAmbientSpawner(false);
-    setObjective("Перейдите старый мост. Если упали — попытка начнётся заново.");
-    setHint("Space даёт рывок. После провала мост перестраивается и даёт ещё шанс.", 3.2);
-    setStoryLine("Старый мост трещит под шагами, но Листи замечает, что можно пробовать снова, пока не найдёшь ритм.");
-    return;
-  }
-
-  if (chapter === 7) {
-    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
-    state.player.x = 22;
-    state.player.y = 104;
-    state.wolf = null;
-    state.lakes = [];
-    state.enemies = [];
-    state.drops = [];
-    state.collectibles = chapterSevenResources();
-    if (!state.flags.snoopGlassTaken) {
-      state.collectibles.push({
-        x: state.registrar.x - 10,
-        y: state.registrar.y + 9,
-        type: "table_glass",
-        name: "Стеклянный камешек со стола Снупа",
-        collected: false,
-      });
-    }
-    state.obstacles = mushroomObstacleLayout();
-    state.breakables = [];
-    state.flags.organizerTalked = false;
-    state.flags.registrationComplete = false;
-    setupAmbientSpawner(true);
-    setObjective("Поговорите с организатором Кэри (E).");
-    setHint("Это грибная аллея: светящиеся грибы у магического источника.", 3.3);
-    setStoryLine("У источника собирают отряд для расследования кражи силы: впереди сложный разговор и непростой выбор.");
-    return;
-  }
-
-  if (chapter === 8) {
-    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
-    state.player.x = 74;
-    state.player.y = 104;
-    state.wolf = null;
-    state.lakes = [];
-    state.collectibles = chapterSevenResources();
-    state.obstacles = mushroomObstacleLayout();
-    state.breakables = [];
-    state.drops = [];
-    state.enemies = spawnBatSwarm();
-    setupAmbientSpawner(true);
-    setObjective("Отразите налёт летучих мышей.");
-    setHint("После победы выберите новый навык (A или B).", 3.2);
-    setStoryLine("Пока Листи записывали в отряд, стая летучих мышей вырвалась из тени и пошла в атаку.");
-    return;
-  }
-
-  if (chapter === 9) {
-    state.worldBounds = { x: 8, y: 16, w: 304, h: 158 };
-    state.player.x = 150;
-    state.player.y = 104;
-    state.wolf = null;
-    state.lakes = [];
-    state.enemies = [];
-    state.drops = [];
-    state.collectibles = chapterSevenResources();
-    state.obstacles = mushroomObstacleLayout();
-    state.breakables = [];
-    setupAmbientSpawner(true);
-    setObjective("Откройте меню (M) и используйте гачу-баннер (G, A, B).");
-    setHint("Валюту дают уровни и задания. Крутка: стоимость 2.", 3.2);
-    setStoryLine("Листи вступила в защиту источника и готовится к большому расследованию вместе с новым отрядом.");
   }
 }
 
@@ -1842,7 +1621,7 @@ function fastTravelToSelection() {
     setHint("Эта область пока не открыта.", 1.8);
     return;
   }
-  gotoChapter(target);
+  tryTransition(target);
   setHint("Быстрый переход: карта перенесла Листи в выбранную область.", 2.4);
 }
 
@@ -1874,15 +1653,34 @@ function commitCharacterMenuSelection() {
   setHint("Экипировка применена и боевые статы пересчитаны.", 2);
 }
 
-function travelToAdjacentChapter(direction) {
-  const target = state.chapter + direction;
-  if (target < 1 || target > 9) return false;
+function tryTransition(directionOrTarget) {
+  const chapter = chapterDefinitions[state.chapter];
+  let target;
+  let isDirectional = false;
+
+  if (directionOrTarget === "next") {
+    target = chapter?.nextChapter;
+    isDirectional = true;
+  } else if (directionOrTarget === "prev") {
+    target = chapter?.prevChapter;
+    isDirectional = true;
+  } else if (typeof directionOrTarget === "number") {
+    target = directionOrTarget;
+  }
+
+  if (typeof target !== "number") return false;
+  if (target < 0 || target > 9) return false;
   if (target > (state.maxChapterUnlocked || 0)) return false;
+
   const fromY = state.player.y;
   gotoChapter(target);
-  const b = state.worldBounds;
-  state.player.x = direction > 0 ? b.x + 6 : b.x + b.w - 6;
-  state.player.y = clamp(fromY, b.y + 4, b.y + b.h - 4);
+
+  if (isDirectional) {
+    const b = state.worldBounds;
+    state.player.x = directionOrTarget === "next" ? b.x + 6 : b.x + b.w - 6;
+    state.player.y = clamp(fromY, b.y + 4, b.y + b.h - 4);
+  }
+
   return true;
 }
 
@@ -3140,120 +2938,9 @@ function tryInteract() {
 }
 
 function updateChapterTransitions(dt) {
-  if (state.chapter >= 2 && state.player.x < 10) {
-    if (travelToAdjacentChapter(-1)) return;
-  }
-
-  if (state.chapter === 1) {
-    if (state.player.x > 306) {
-      gotoChapter(2);
-    }
-    return;
-  }
-
-  if (state.chapter === 2) {
-    collectNearbyResources();
-    if (state.player.x > 306) {
-      if (state.gathered < state.gatherGoal) {
-        setHint(`Вы можете идти дальше, но для квеста нужно собрать ещё ${state.gatherGoal - state.gathered}.`, 2.1);
-      }
-      gotoChapter(3);
-    }
-    return;
-  }
-
-  if (state.chapter === 3) {
-    updateWolf(dt);
-
-    if (state.player.x > 306) {
-      if (!state.flags.wolfDefeated || !isBreakableBroken("wolf_barrier")) {
-        setHint("Босс и завал ещё активны, но в открытом мире проход в чащу не блокируется.", 2.2);
-      }
-      gotoChapter(4);
-    }
-    return;
-  }
-
-  if (state.chapter === 4) {
-    collectNearbyResources();
-    if (state.player.x > 306) {
-      if (!state.flags.rescuedHealer) {
-        setHint("Травница ещё ждёт помощи в чаще, но карта остаётся свободной.", 2.2);
-      }
-      gotoChapter(5);
-    }
-    return;
-  }
-
-  if (state.chapter === 5) {
-    collectNearbyResources();
-    collectNearbyDrops();
-    updateLakeMonsterSpawns(dt);
-    updateEnemies(dt);
-
-    if (state.player.hp <= 0) {
-      if (tryRespawnFromCheckpoint()) {
-        return;
-      }
-      state.player.hp = Math.round(state.player.maxHp * 0.6);
-      state.player.mana = Math.round(state.player.maxMana * 0.55);
-      state.player.x = 24;
-      state.player.y = 94;
-      setHint("Эльфийка отступила от озёр и восстановилась.", 2.2);
-    }
-
-    if (state.player.x > 306) {
-      if (!state.flags.lakeQuestDone) {
-        setHint("Озёрный квест ещё не завершён, но путь по карте открыт.", 2.1);
-      }
-      gotoChapter(6);
-    }
-    return;
-  }
-
-  if (state.chapter === 6) {
-    updateBridgeChallenge(dt);
-    if (state.flags.bridgePassed && state.player.x > 306) {
-      gotoChapter(7);
-    }
-    return;
-  }
-
-  if (state.chapter === 7) {
-    collectNearbyResources();
-    if (state.player.x > 306) {
-      if (!state.flags.registrationComplete) {
-        setHint("Регистрация не завершена, но проход к источнику открыт.", 2.1);
-      }
-      gotoChapter(8);
-    }
-    return;
-  }
-
-  if (state.chapter === 8) {
-    collectNearbyResources();
-    updateEnemies(dt);
-    if (state.player.hp <= 0) {
-      if (tryRespawnFromCheckpoint()) {
-        return;
-      }
-      state.player.hp = Math.round(state.player.maxHp * 0.6);
-      state.player.mana = Math.round(state.player.maxMana * 0.55);
-      state.player.x = 74;
-      state.player.y = 104;
-      setHint("Эльфийка перехватила дыхание и снова вступила в бой.", 2.2);
-    }
-
-    if (state.player.x > 306) {
-      if (!state.flags.skillChoiceMade) setHint("Навык не выбран, но вы можете вернуться к событию позже.", 2.1);
-      gotoChapter(9);
-    }
-    return;
-  }
-
-  if (state.chapter === 9) {
-    collectNearbyResources();
-  }
+  const chapterDefinition = chapterDefinitions[state.chapter];
+  if (!chapterDefinition || typeof chapterDefinition.onUpdate !== "function") return;
+  chapterDefinition.onUpdate(state, dt);
 }
 
 function update(dt) {
