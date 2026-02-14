@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="none"/>
+
+  <!-- tree_large 0,0,120,160 -->
+  <g transform="translate(0 0)">
+    <ellipse cx="60" cy="146" rx="52" ry="12" fill="#d7e58f" opacity="0.6"/>
+    <rect x="52" y="74" width="16" height="76" rx="6" fill="#7e5534"/>
+    <circle cx="60" cy="54" r="44" fill="#68ab4f"/>
+    <circle cx="36" cy="66" r="28" fill="#7ecb5a"/>
+    <circle cx="84" cy="66" r="28" fill="#7ecb5a"/>
+    <circle cx="60" cy="80" r="26" fill="#5f984a"/>
+  </g>
+
+  <!-- tree_small 120,0,96,132 -->
+  <g transform="translate(120 0)">
+    <ellipse cx="48" cy="122" rx="40" ry="10" fill="#d7e58f" opacity="0.55"/>
+    <rect x="42" y="62" width="12" height="58" rx="5" fill="#785230"/>
+    <circle cx="48" cy="44" r="32" fill="#6db256"/>
+    <circle cx="29" cy="54" r="20" fill="#84cd63"/>
+    <circle cx="67" cy="54" r="20" fill="#84cd63"/>
+  </g>
+
+  <!-- bush 0,170,120,66 -->
+  <g transform="translate(0 170)">
+    <ellipse cx="60" cy="58" rx="56" ry="8" fill="#dde99a" opacity="0.6"/>
+    <circle cx="28" cy="34" r="20" fill="#74b95a"/>
+    <circle cx="50" cy="24" r="22" fill="#87cf64"/>
+    <circle cx="74" cy="28" r="22" fill="#7cc15d"/>
+    <circle cx="92" cy="36" r="18" fill="#6eaf53"/>
+  </g>
+
+  <!-- rock 132,170,76,52 -->
+  <g transform="translate(132 170)">
+    <ellipse cx="38" cy="46" rx="34" ry="5" fill="#d7d8cd" opacity="0.45"/>
+    <ellipse cx="38" cy="28" rx="30" ry="20" fill="#8f9497"/>
+    <ellipse cx="30" cy="24" rx="12" ry="8" fill="#b8bec1" opacity="0.6"/>
+  </g>
+
+  <!-- mushroom 216,170,54,62 -->
+  <g transform="translate(216 170)">
+    <ellipse cx="27" cy="58" rx="20" ry="4" fill="#e6de9a" opacity="0.5"/>
+    <rect x="22" y="30" width="10" height="24" rx="4" fill="#d6bb8f"/>
+    <ellipse cx="27" cy="28" rx="18" ry="10" fill="#d65a35"/>
+    <circle cx="22" cy="26" r="2" fill="#ffd9a6"/>
+    <circle cx="31" cy="24" r="2" fill="#ffd9a6"/>
+  </g>
+
+  <!-- lake 278,170,120,70 -->
+  <g transform="translate(278 170)">
+    <ellipse cx="60" cy="46" rx="54" ry="22" fill="#4da9cf"/>
+    <ellipse cx="52" cy="42" rx="28" ry="10" fill="#87d8f2" opacity="0.7"/>
+    <ellipse cx="75" cy="54" rx="18" ry="7" fill="#2f7fa9" opacity="0.55"/>
+  </g>
+
+  <!-- grass_tile 0,248,128,48 -->
+  <g transform="translate(0 248)">
+    <rect x="0" y="18" width="128" height="30" rx="5" fill="#7a5c40"/>
+    <rect x="0" y="0" width="128" height="24" rx="8" fill="#6eb850"/>
+    <path d="M0 22 C24 12, 50 30, 74 20 S112 28, 128 18" stroke="#8eda62" stroke-width="6" fill="none"/>
+  </g>
+
+  <!-- crystal 138,248,72,94 -->
+  <g transform="translate(138 248)">
+    <ellipse cx="36" cy="84" rx="24" ry="8" fill="#d3ecff" opacity="0.45"/>
+    <path d="M36 10 L54 30 L58 54 L36 82 L14 54 L18 30 Z" fill="#65b9e6"/>
+    <path d="M36 18 L47 32 L44 54 L36 72 L28 54 L25 32 Z" fill="#bde9ff"/>
+  </g>
+
+  <!-- herb 220,248,64,70 -->
+  <g transform="translate(220 248)">
+    <ellipse cx="32" cy="64" rx="26" ry="6" fill="#dfe9a2" opacity="0.4"/>
+    <path d="M32 54 C18 40, 8 34, 8 20 C18 20, 24 28, 32 54" fill="#6fb14f"/>
+    <path d="M32 54 C46 40, 56 34, 56 20 C46 20, 40 28, 32 54" fill="#84cb60"/>
+    <path d="M32 54 C24 40, 24 24, 32 10 C40 24, 40 40, 32 54" fill="#5fa244"/>
+  </g>
+</svg>
