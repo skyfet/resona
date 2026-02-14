@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resona: Лесной Источник</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="layout" aria-label="Resona forest quest">
+      <section id="menu" class="menu" aria-label="Main menu">
+        <h1>Resona: Лесной Источник</h1>
+        <p>Пиксельное приключение: дом, лес, озёра, старый мост, грибная аллея и защита магического источника.</p>
+        <div class="controls" aria-label="Controls">
+          <p>Движение: WASD / стрелки</p>
+          <p>Взаимодействие: E / Enter</p>
+          <p>Сохранение: E у кристалла</p>
+          <p>Удар рукой: J / B</p>
+          <p>Порыв ветра: K / A (мана)</p>
+          <p>Листопад: L (или Enter у препятствия)</p>
+          <p>Уворот / рывок на мосту: Space</p>
+          <p>Книга рецептов: R</p>
+          <p>Скрафтить зелье: H</p>
+          <p>Выпить зелье: U</p>
+          <p>Ответы в опросе и выбор навыка: A / B</p>
+          <p>Меню отряда: M</p>
+          <p>Гача-баннер: G (в меню), крутки A/B</p>
+          <p>Полный экран: F</p>
+        </div>
+        <div class="menu-actions">
+          <button id="start-btn" type="button">Новая игра</button>
+          <button id="continue-btn" type="button" hidden>Продолжить с точки сохранения</button>
+        </div>
+      </section>
+
+      <section class="stage">
+        <canvas id="game" width="320" height="180" aria-label="Game canvas"></canvas>
+      </section>
+
+      <section class="hud" aria-label="Game status">
+        <p><span>Глава:</span> <strong id="chapter-label">-</strong></p>
+        <p><span>Уровень:</span> <strong id="level-label">1</strong></p>
+        <p><span>HP:</span> <strong id="hp-label">100/100</strong></p>
+        <p><span>MP:</span> <strong id="mana-label">24/24</strong></p>
+        <p><span>Валюта:</span> <strong id="coins-label">0</strong></p>
+        <p><span>Рюкзак:</span> <strong id="inventory-label">пусто</strong></p>
+        <p><span>Цель:</span> <strong id="objective">Нажмите «Начать путь»</strong></p>
+        <p><span>Подсказка:</span> <strong id="hint">-</strong></p>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

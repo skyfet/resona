@@ -1,0 +1,23 @@
+{
+  "name": "resona",
+  "version": "1.0.0",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skyfet/resona.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/skyfet/resona/issues"
+  },
+  "homepage": "https://github.com/skyfet/resona#readme",
+  "description": "",
+  "dependencies": {
+    "playwright": "^1.58.2"
+  }
+}
