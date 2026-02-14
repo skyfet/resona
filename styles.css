@@ -5,6 +5,7 @@
   --panel: #f3e5bf;
   --ink: #2c1f16;
   --accent: #b86a30;
+  --button-shadow: #2f2013;
 }
 
 * {
@@ -80,16 +81,31 @@ body {
 .menu-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.5rem;
+}
+
+.menu-actions button {
+  border-radius: 8px;
+  box-shadow: 0 3px 0 var(--button-shadow);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+.menu-actions button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--button-shadow);
+}
+
+.menu-actions button:hover {
+  filter: brightness(1.06);
 }
 
 .menu-panel {
   border: 2px solid #8e6b47;
   background: #fff7df;
-  padding: 0.55rem;
-  min-height: 4.8rem;
+  padding: 0.6rem;
+  min-height: 5.1rem;
   display: grid;
-  gap: 0.28rem;
+  gap: 0.32rem;
 }
 
 .menu-panel-title {
@@ -144,8 +160,9 @@ body {
 
 .hud {
   display: grid;
-  gap: 0.3rem;
-  font-size: 0.87rem;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  line-height: 1.3;
 }
 
 .hud p {
