@@ -30,6 +30,7 @@ body {
   width: min(1100px, 100%);
   display: grid;
   gap: 0.9rem;
+  line-height: 1.45;
 }
 
 .menu,
@@ -102,10 +103,11 @@ body {
 .menu-panel {
   border: 2px solid #8e6b47;
   background: #fff7df;
-  padding: 0.6rem;
-  min-height: 5.1rem;
+  padding: 0.65rem;
+  min-height: 6.2rem;
   display: grid;
-  gap: 0.32rem;
+  gap: 0.36rem;
+  overflow-wrap: anywhere;
 }
 
 .menu-panel-title {
@@ -160,9 +162,9 @@ body {
 
 .hud {
   display: grid;
-  gap: 0.35rem;
-  font-size: 0.9rem;
-  line-height: 1.3;
+  gap: 0.4rem;
+  font-size: 0.94rem;
+  line-height: 1.35;
 }
 
 .hud p {

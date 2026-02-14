@@ -26,16 +26,16 @@ const STEP = 1 / 60;
 const CHECKPOINT_STORAGE_KEY = "resona_checkpoint_v1";
 
 const chapterNames = {
-  0: "Дом бабушки",
-  1: "Маленькая деревня",
-  2: "Лесная тропа",
-  3: "Старый лесной волк",
-  4: "Глубокая чаща",
-  5: "Озёрная кромка",
-  6: "Старый мост",
-  7: "Грибная аллея",
-  8: "Налёт летучих мышей",
-  9: "Путь защитницы",
+  0: "Единая долина • Дом",
+  1: "Единая долина • Поселение",
+  2: "Единая долина • Лесная тропа",
+  3: "Единая долина • Логово волка",
+  4: "Единая долина • Чаща травницы",
+  5: "Единая долина • Озёрный край",
+  6: "Единая долина • Старый мост",
+  7: "Единая долина • Площадь Снупа",
+  8: "Единая долина • Налёт летучих мышей",
+  9: "Единая долина • Источник",
 };
 
 const chapterMapNodes = {
@@ -201,8 +201,9 @@ const forestDecor = {
 const state = {
   mode: "menu",
   chapter: 0,
+  hero: "listi",
   time: 0,
-  objective: "Нажмите «Начать путь»",
+  objective: "Нажмите «Новая игра», чтобы войти в открытую долину.",
   hint: "-",
   hintTimer: 0,
   storyLine: "",
@@ -221,6 +222,7 @@ const state = {
     registrationComplete: false,
     batsDefeated: false,
     skillChoiceMade: false,
+    snoopGlassTaken: false,
   },
   player: {
     x: 72,
@@ -315,6 +317,10 @@ const state = {
     magicFang: 0,
     healingPotion: 0,
     healingRecipeScroll: 0,
+    emptyJar: 0,
+    blackSlime: 0,
+    amulet: 0,
+    wolfFangBonus: "",
   },
   recipeBook: {
     hasHealingRecipe: false,
@@ -810,7 +816,11 @@ function applyGachaReward(result) {
       return;
     }
     state.gacha.collection.characters.push(result.itemId);
-    setHint(`Получен персонаж: ${result.itemName}.`, 2.6);
+    if (result.itemId === "char_liora") {
+      setHint("Получена Травница Лиора. Нажмите T, чтобы выбрать её лидером.", 3);
+    } else {
+      setHint(`Получен персонаж: ${result.itemName}.`, 2.6);
+    }
     return;
   }
 
@@ -1182,6 +1192,7 @@ function resetAdventureState() {
   state.flags.registrationComplete = false;
   state.flags.batsDefeated = false;
   state.flags.skillChoiceMade = false;
+  state.flags.snoopGlassTaken = false;
 
   state.skills.windGust = true;
   state.skills.leafFall = false;
@@ -1219,6 +1230,10 @@ function resetAdventureState() {
   state.inventory.magicFang = 0;
   state.inventory.healingPotion = 0;
   state.inventory.healingRecipeScroll = 0;
+  state.inventory.emptyJar = 0;
+  state.inventory.blackSlime = 0;
+  state.inventory.amulet = 0;
+  state.inventory.wolfFangBonus = "";
 
   state.recipeBook.hasHealingRecipe = false;
   state.recipeBook.learnedHealingPotion = false;
@@ -1240,6 +1255,7 @@ function resetAdventureState() {
   state.gacha.collection.weapons = {};
   state.gacha.activeBannerId = "standard_forest";
   state.party.leader = "Листи";
+  state.hero = "listi";
   state.party.members = [];
 
   state.player.maxHp = 100;
@@ -1456,6 +1472,15 @@ function gotoChapter(chapter) {
     state.enemies = [];
     state.drops = [];
     state.collectibles = chapterSevenResources();
+    if (!state.flags.snoopGlassTaken) {
+      state.collectibles.push({
+        x: state.registrar.x - 10,
+        y: state.registrar.y + 9,
+        type: "table_glass",
+        name: "Стеклянный камешек со стола Снупа",
+        collected: false,
+      });
+    }
     state.obstacles = mushroomObstacleLayout();
     state.breakables = [];
     state.flags.organizerTalked = false;
@@ -1626,11 +1651,11 @@ function inventoryText() {
     return "Скрыт (I — открыть багаж)";
   }
   const recipe = state.recipeBook.learnedHealingPotion ? "изучен" : state.recipeBook.hasHealingRecipe ? "получен" : "нет";
-  return `мята:${state.inventory.mint} стекло:${state.inventory.glassStone} лягушки:${state.inventory.wetFrog} светлячки:${state.inventory.firefly} камыш:${state.inventory.denseReed} лён:${state.inventory.flaxSeed} рыбий жир:${state.inventory.fishOil} зелья:${state.inventory.healingPotion} рецепт:${recipe}`;
+  return `мята:${state.inventory.mint} стекло:${state.inventory.glassStone} банки:${state.inventory.emptyJar} слизь:${state.inventory.blackSlime} лягушки:${state.inventory.wetFrog} светлячки:${state.inventory.firefly} камыш:${state.inventory.denseReed} лён:${state.inventory.flaxSeed} рыбий жир:${state.inventory.fishOil} амулеты:${state.inventory.amulet} зелья:${state.inventory.healingPotion} рецепт:${recipe}`;
 }
 
 function refreshHud() {
-  chapterNode.textContent = chapterNames[state.chapter] || "Эпилог";
+  chapterNode.textContent = chapterNames[state.chapter] || "Единая долина";
   levelNode.textContent = String(state.player.level);
   hpNode.textContent = `${formatStatValue(state.player.hp)}/${formatStatValue(state.player.maxHp)}`;
   manaNode.textContent = `${formatStatValue(state.player.mana)}/${formatStatValue(state.player.maxMana)}`;
@@ -1800,6 +1825,11 @@ function updateTimers(dt) {
   player.invuln = Math.max(0, player.invuln - dt);
   player.dodgeCooldown = Math.max(0, player.dodgeCooldown - dt);
   player.basicCooldown = Math.max(0, player.basicCooldown - dt);
+  if (state.hero === "healer") {
+    player.manaRegen = 5.4;
+  } else {
+    player.manaRegen = 4.5;
+  }
   player.windCooldown = Math.max(0, player.windCooldown - dt);
   player.leafCooldown = Math.max(0, player.leafCooldown - dt);
   player.bridgeSprint = Math.max(0, player.bridgeSprint - dt);
@@ -1952,6 +1982,11 @@ function collectResource(item) {
 
   if (item.type === "mint") state.inventory.mint += 1;
   if (item.type === "glass") state.inventory.glassStone += 1;
+  if (item.type === "table_glass") {
+    state.inventory.glassStone += 1;
+    state.flags.snoopGlassTaken = true;
+    setHint("Вы стащили камешек со стола Снупа, пока он отвернулся.", 2.6);
+  }
   if (item.type === "frog") state.inventory.wetFrog += 1;
   if (item.type === "firefly") state.inventory.firefly += 1;
   if (item.type === "dense_reed") state.inventory.denseReed += 1;
@@ -1996,6 +2031,12 @@ function spawnDrop(x, y, type, name) {
 
 function collectDrop(drop) {
   if (drop.collected) return;
+
+  if (drop.type === "black_slime" && state.inventory.emptyJar < 1) {
+    setHint("Нужна пустая банка (Y), чтобы собрать чёрную слизь.", 2.4);
+    return;
+  }
+
   drop.collected = true;
 
   if (drop.type === "fish_oil") {
@@ -2015,6 +2056,20 @@ function collectDrop(drop) {
         `У озёр победите монстров и соберите рыбий жир (${state.lakeQuest.fishOilCollected}/${state.lakeQuest.fishOilGoal}).`
       );
     }
+  }
+
+  if (drop.type === "black_slime") {
+    state.inventory.emptyJar -= 1;
+    state.inventory.blackSlime += 1;
+    setHint("Чёрная слизь собрана в банку.", 2);
+  }
+
+  if (drop.type === "amulet") {
+    state.inventory.amulet += 1;
+    state.player.maxHp += 1;
+    state.player.maxMana += 1;
+    state.combatMods.damageReduction = Math.min(0.35, state.combatMods.damageReduction + 0.02);
+    setHint("Найден редкий амулет: +1 HP, +1 MP и защита.", 2.4);
   }
 
   state.sparks.push({ x: drop.x, y: drop.y, life: 0.2, color: "#8fdfff" });
@@ -2045,16 +2100,23 @@ function spawnLakeMonster(lake) {
   const angle = randomRange(0, Math.PI * 2);
   const x = lake.x + Math.cos(angle) * Math.max(2, lake.r - 5);
   const y = lake.y + Math.sin(angle) * Math.max(2, lake.r - 5);
+  const archetypes = [
+    { kind: "lake_spawn", hp: 24, speed: [30, 38], dmg: 7 },
+    { kind: "bog_toad", hp: 36, speed: [20, 28], dmg: 10 },
+    { kind: "thorn_crab", hp: 48, speed: [14, 20], dmg: 12 },
+  ];
+  const picked = archetypes[randomInt(0, archetypes.length - 1)];
   state.enemies.push({
     id: `lake_${Math.round(state.time * 1000)}_${randomInt(0, 999)}`,
-    kind: "lake_spawn",
+    kind: picked.kind,
     x,
     y,
-    hp: 28,
-    maxHp: 28,
-    speed: randomRange(24, 34),
+    hp: picked.hp,
+    maxHp: picked.hp,
+    speed: randomRange(picked.speed[0], picked.speed[1]),
     attackCooldown: randomRange(0.6, 1.2),
-    contactDamage: 8,
+    contactDamage: picked.dmg,
+    rare: Math.random() < 0.18,
     hitFlash: 0,
     dotTimer: 0,
     dotTick: 0,
@@ -2065,16 +2127,18 @@ function spawnLakeMonster(lake) {
 function spawnBatSwarm() {
   const bats = [];
   for (let i = 0; i < 7; i += 1) {
+    const hp = randomInt(16, 32);
     bats.push({
       id: `bat_${i}_${Date.now()}`,
       kind: "bat",
       x: 188 + Math.cos(i * 0.7) * 28,
       y: 86 + Math.sin(i * 0.9) * 22,
-      hp: 22,
-      maxHp: 22,
-      speed: randomRange(38, 52),
+      hp,
+      maxHp: hp,
+      speed: randomRange(34, 58),
       attackCooldown: randomRange(0.3, 0.9),
-      contactDamage: 7,
+      contactDamage: randomInt(5, 10),
+      rare: Math.random() < 0.12,
       hitFlash: 0,
       dotTimer: 0,
       dotTick: 0,
@@ -2146,13 +2210,27 @@ function damageWolf(amount) {
   state.flags.leafFallUnlocked = true;
   state.skills.leafFall = true;
   state.inventory.magicFang += 1;
-  state.player.maxHp += 2;
-  state.player.hp = Math.min(state.player.maxHp, state.player.hp + 2);
+  const roll = randomInt(1, 3);
+  if (roll === 1) {
+    const bonus = randomInt(1, 6);
+    state.player.maxHp += bonus;
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + bonus);
+    state.inventory.wolfFangBonus = `Клык волка: +${bonus} HP`;
+  } else if (roll === 2) {
+    const bonus = randomInt(1, 10);
+    state.player.maxMana += bonus;
+    state.player.mana = Math.min(state.player.maxMana, state.player.mana + bonus);
+    state.inventory.wolfFangBonus = `Клык волка: +${bonus} MP`;
+  } else {
+    const bonus = randomInt(1, 20);
+    state.combatMods.bonusDamage += bonus;
+    state.inventory.wolfFangBonus = `Клык волка: +${bonus} атаки`;
+  }
   state.player.level += 1;
   awardWishTokens(2, "победа над волком");
 
   setObjective("Волк повержен. Нажмите L, чтобы «Листопадом» разбить завал впереди.");
-  setHint("Получен магический клык (+2 к максимальному здоровью).", 3.2);
+  setHint(`Получен волчий клык. ${state.inventory.wolfFangBonus}.`, 3.2);
   setStoryLine("Новый навык: «Листопад». Он ломает препятствия в лесу.");
 }
 
@@ -2163,9 +2241,11 @@ function damageEnemy(enemy, amount) {
   enemy.hitFlash = 0.12;
   state.sparks.push({ x: enemy.x, y: enemy.y, life: 0.14, color: "#ffdca2" });
 
-  if (state.skills.poisonBloom && state.combatMods.dotDamage > 0) {
-    enemy.dotTimer = Math.max(enemy.dotTimer || 0, 3.6);
-    enemy.dotTick = Math.min(enemy.dotTick || 0, 0.35);
+  if ((state.skills.poisonBloom && state.combatMods.dotDamage > 0) || state.hero === "healer") {
+    const dotTime = state.hero === "healer" ? 5.2 : 3.6;
+    const dotTick = state.hero === "healer" ? 0.28 : 0.35;
+    enemy.dotTimer = Math.max(enemy.dotTimer || 0, dotTime);
+    enemy.dotTick = Math.min(enemy.dotTick || 0, dotTick);
   }
 
   if (enemy.hp > 0) return;
@@ -2173,6 +2253,14 @@ function damageEnemy(enemy, amount) {
 
   if (enemy.kind === "lake_spawn") {
     spawnDrop(enemy.x, enemy.y, "fish_oil", "Рыбий жир");
+  }
+
+  if (enemy.kind === "bat") {
+    spawnDrop(enemy.x, enemy.y, "black_slime", "Чёрная слизь");
+  }
+
+  if (enemy.rare && Math.random() < 0.7) {
+    spawnDrop(enemy.x, enemy.y, "amulet", "Редкий амулет");
   }
 
   if (Math.random() < 0.12) {
@@ -2234,7 +2322,7 @@ function tryBasicAttack() {
   const player = state.player;
   if (player.basicCooldown > 0) return;
 
-  player.basicCooldown = 0.35;
+  player.basicCooldown = state.hero === "healer" ? 0.22 : 0.35;
   state.sparks.push({
     x: player.x + player.dirX * 10,
     y: player.y + player.dirY * 10,
@@ -2245,7 +2333,8 @@ function tryBasicAttack() {
   const target = nearestEnemyToPlayer(28);
   if (!target) return;
 
-  const damage = 13 + (state.skills.directBurst ? Math.max(4, state.combatMods.bonusDamage) : 0);
+  const baseDamage = state.hero === "healer" ? 10 : 13;
+  const damage = baseDamage + (state.skills.directBurst ? Math.max(4, state.combatMods.bonusDamage) : 0);
   if (target.type === "wolf") {
     if (target.distance < 28) {
       damageWolf(damage);
@@ -2280,16 +2369,36 @@ function tryWindGust() {
     }
   }
 
-  state.projectiles.push({
-    kind: "wind",
-    x: player.x + xAxis * 7,
-    y: player.y + yAxis * 7,
-    vx: xAxis * 182,
-    vy: yAxis * 182,
-    life: 1.1,
-    damage: 30 + Math.round(state.combatMods.bonusDamage * 0.45),
-    radius: 2.5,
-  });
+  if (state.hero === "healer") {
+    const aoe = 34;
+    let hitCount = 0;
+    for (const enemy of state.enemies) {
+      if (!enemy.alive) continue;
+      if (dist(enemy.x, enemy.y, player.x, player.y) <= aoe) {
+        damageEnemy(enemy, 22 + Math.round(state.combatMods.bonusDamage * 0.3));
+        hitCount += 1;
+      }
+    }
+    if (state.wolf && state.wolf.alive && dist(state.wolf.x, state.wolf.y, player.x, player.y) <= aoe) {
+      damageWolf(22);
+      hitCount += 1;
+    }
+    if (hitCount > 0) {
+      state.player.hp = Math.min(state.player.maxHp, state.player.hp + 8);
+      setHint("Травница применила круг жизни: урон по области и лечение.", 1.8);
+    }
+  } else {
+    state.projectiles.push({
+      kind: "wind",
+      x: player.x + xAxis * 7,
+      y: player.y + yAxis * 7,
+      vx: xAxis * 182,
+      vy: yAxis * 182,
+      life: 1.1,
+      damage: 30 + Math.round(state.combatMods.bonusDamage * 0.45),
+      radius: 2.5,
+    });
+  }
 }
 
 function onHealerTreeBroken() {
@@ -2395,6 +2504,34 @@ function toggleRecipeBook() {
   }
 
   state.recipeBook.open = !state.recipeBook.open;
+}
+
+function tryCraftJar() {
+  if (state.inventory.glassStone < 2) {
+    setHint("Нужно 2 стеклянных камешка для пустой банки.", 2);
+    return;
+  }
+  state.inventory.glassStone -= 2;
+  state.inventory.emptyJar += 1;
+  setHint("Скрафтована пустая банка (+1).", 1.8);
+}
+
+function trySwapHero() {
+  const healerUnlocked = state.flags.rescuedHealer || state.gacha.collection.characters.includes("char_liora");
+  if (!healerUnlocked) {
+    setHint("Травница ещё недоступна. Спасите её или выбейте в баннере.", 2.4);
+    return;
+  }
+
+  if (state.hero === "listi") {
+    state.hero = "healer";
+    state.party.leader = "Травница";
+    setHint("Лидер отряда: Травница. Быстрые атаки и ядовитая поддержка.", 2.4);
+  } else {
+    state.hero = "listi";
+    state.party.leader = "Листи";
+    setHint("Лидер отряда: Листи.", 1.6);
+  }
 }
 
 function tryCraftPotion() {
@@ -2819,12 +2956,10 @@ function updateChapterTransitions(dt) {
   if (state.chapter === 2) {
     collectNearbyResources();
     if (state.player.x > 306) {
-      if (state.gathered >= state.gatherGoal) {
-        gotoChapter(3);
-      } else {
-        state.player.x = 306;
-        setHint(`Нужно собрать еще ${state.gatherGoal - state.gathered} ресурсов.`, 1.9);
+      if (state.gathered < state.gatherGoal) {
+        setHint(`Вы можете идти дальше, но для квеста нужно собрать ещё ${state.gatherGoal - state.gathered}.`, 2.1);
       }
+      gotoChapter(3);
     }
     return;
   }
@@ -2833,15 +2968,10 @@ function updateChapterTransitions(dt) {
     updateWolf(dt);
 
     if (state.player.x > 306) {
-      if (!state.flags.wolfDefeated) {
-        state.player.x = 306;
-        setHint("Сначала победите волка.", 1.8);
-      } else if (!isBreakableBroken("wolf_barrier")) {
-        state.player.x = 306;
-        setHint("Разбейте сухой завал навыком «Листопад» (L).", 2);
-      } else {
-        gotoChapter(4);
+      if (!state.flags.wolfDefeated || !isBreakableBroken("wolf_barrier")) {
+        setHint("Босс и завал ещё активны, но в открытом мире проход в чащу не блокируется.", 2.2);
       }
+      gotoChapter(4);
     }
     return;
   }
@@ -2850,11 +2980,9 @@ function updateChapterTransitions(dt) {
     collectNearbyResources();
     if (state.player.x > 306) {
       if (!state.flags.rescuedHealer) {
-        state.player.x = 306;
-        setHint("Помогите травнице, прежде чем идти дальше.", 2);
-      } else {
-        gotoChapter(5);
+        setHint("Травница ещё ждёт помощи в чаще, но карта остаётся свободной.", 2.2);
       }
+      gotoChapter(5);
     }
     return;
   }
@@ -2878,11 +3006,9 @@ function updateChapterTransitions(dt) {
 
     if (state.player.x > 306) {
       if (!state.flags.lakeQuestDone) {
-        state.player.x = 306;
-        setHint("Сначала соберите рыбий жир с озёрных монстров.", 2);
-      } else {
-        gotoChapter(6);
+        setHint("Озёрный квест ещё не завершён, но путь по карте открыт.", 2.1);
       }
+      gotoChapter(6);
     }
     return;
   }
@@ -2898,12 +3024,10 @@ function updateChapterTransitions(dt) {
   if (state.chapter === 7) {
     collectNearbyResources();
     if (state.player.x > 306) {
-      if (state.flags.registrationComplete) {
-        gotoChapter(8);
-      } else {
-        state.player.x = 306;
-        setHint("Сначала поговорите с организатором и пройдите регистрацию.", 2);
+      if (!state.flags.registrationComplete) {
+        setHint("Регистрация не завершена, но проход к источнику открыт.", 2.1);
       }
+      gotoChapter(8);
     }
     return;
   }
@@ -2922,7 +3046,8 @@ function updateChapterTransitions(dt) {
       setHint("Эльфийка перехватила дыхание и снова вступила в бой.", 2.2);
     }
 
-    if (state.player.x > 306 && state.flags.skillChoiceMade) {
+    if (state.player.x > 306) {
+      if (!state.flags.skillChoiceMade) setHint("Навык не выбран, но вы можете вернуться к событию позже.", 2.1);
       gotoChapter(9);
     }
     return;
@@ -3000,6 +3125,14 @@ function update(dt) {
 
   if (consumeKey(["KeyU"])) {
     tryUsePotion();
+  }
+
+  if (consumeKey(["KeyY"])) {
+    tryCraftJar();
+  }
+
+  if (consumeKey(["KeyT"])) {
+    trySwapHero();
   }
 
   if (consumeKey(["Space"])) {
@@ -3847,15 +3980,19 @@ function drawInventoryPanel() {
   const rows = [
     `Мята: ${state.inventory.mint}`,
     `Стеклянный камень: ${state.inventory.glassStone}`,
+    `Пустая банка: ${state.inventory.emptyJar}`,
+    `Чёрная слизь: ${state.inventory.blackSlime}`,
     `Влажная лягушка: ${state.inventory.wetFrog}`,
     `Светлячок: ${state.inventory.firefly}`,
     `Плотный камыш: ${state.inventory.denseReed}`,
     `Семена льна: ${state.inventory.flaxSeed}`,
     `Рыбий жир: ${state.inventory.fishOil}`,
     `Клык: ${state.inventory.magicFang}`,
+    `Амулет: ${state.inventory.amulet}`,
     `Зелье лечения: ${state.inventory.healingPotion}`,
   ];
-  rows.forEach((line, i) => ctx.fillText(line, 30, 54 + i * 11));
+  rows.forEach((line, i) => ctx.fillText(line, 30, 50 + i * 9));
+  if (state.inventory.wolfFangBonus) ctx.fillText(ellipsizeText(state.inventory.wolfFangBonus, 248), 30, 164);
 }
 
 function drawWorldMapPanel() {
@@ -3866,7 +4003,7 @@ function drawWorldMapPanel() {
   ctx.strokeRect(16.5, 18.5, 287, 143);
   ctx.fillStyle = "#d8f1e8";
   ctx.font = '9px "Lucida Console", "Courier New", monospace';
-  ctx.fillText("Карта региона (Tab — закрыть)", 24, 34);
+  ctx.fillText("Единая карта долины (Tab — закрыть)", 24, 34);
 
   for (let chapter = 0; chapter <= 9; chapter += 1) {
     const node = chapterMapNodes[chapter];
@@ -3900,7 +4037,7 @@ function drawWorldMapPanel() {
 
   ctx.fillStyle = "#bcd8c7";
   ctx.font = '7px "Lucida Console", "Courier New", monospace';
-  ctx.fillText("Жёлтый: вы здесь | Мятный: выбор | Enter: перейти", 24, 152);
+  ctx.fillText("Жёлтый: вы здесь | Мятный: выбор | Enter: быстрый переход", 24, 152);
 }
 
 function drawCharacterMenuPanel() {
