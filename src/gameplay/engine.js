@@ -562,6 +562,7 @@ export function applyCheckpointSnapshot(snapshot, options = {}) {
   if (!snapshot || typeof snapshot.chapter !== "number") return false;
 
   menuNode.classList.add("hidden");
+  resizeCanvasDisplay();
   state.mode = "play";
   gotoChapter(snapshot.chapter);
 
@@ -1469,6 +1470,7 @@ function setupMenuInteractions() {
 function startGame() {
   menuNode.classList.add("hidden");
   if (controlsPanel) controlsPanel.hidden = true;
+  resizeCanvasDisplay();
   resetAdventureState();
   canvas.focus();
 }
@@ -1512,11 +1514,17 @@ function toggleFullscreen() {
 function resizeCanvasDisplay() {
   const ratio = WIDTH / HEIGHT;
   const parent = canvas.parentElement;
-  const parentWidth = parent ? parent.clientWidth : window.innerWidth;
+  let parentContentWidth = window.innerWidth;
+  if (parent) {
+    const parentStyles = window.getComputedStyle(parent);
+    const paddingLeft = Number.parseFloat(parentStyles.paddingLeft) || 0;
+    const paddingRight = Number.parseFloat(parentStyles.paddingRight) || 0;
+    parentContentWidth = Math.max(1, parent.clientWidth - paddingLeft - paddingRight);
+  }
   const fullscreen = Boolean(document.fullscreenElement);
   const widthLimit = fullscreen
     ? window.innerWidth * 0.98
-    : Math.min(parentWidth, window.innerWidth * 0.92);
+    : Math.min(parentContentWidth, window.innerWidth * 0.92);
   const heightLimit = window.innerHeight * (fullscreen ? 0.95 : 0.72);
   let displayWidth = widthLimit;
   let displayHeight = displayWidth / ratio;

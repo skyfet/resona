@@ -1,0 +1,816 @@
+[
+  {
+    "viewport": {
+      "width": 1280,
+      "height": 900
+    },
+    "before": {
+      "innerWidth": 1280,
+      "scrollWidth": 1280,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 1280,
+      "layoutColumns": "363.969px 496.344px 330.906px",
+      "menu": {
+        "x": 30,
+        "y": 95,
+        "w": 364,
+        "h": 710,
+        "right": 394,
+        "bottom": 805
+      },
+      "stage": {
+        "x": 408,
+        "y": 95,
+        "w": 496,
+        "h": 303,
+        "right": 905,
+        "bottom": 398
+      },
+      "hud": {
+        "x": 919,
+        "y": 95,
+        "w": 331,
+        "h": 300,
+        "right": 1250,
+        "bottom": 395
+      },
+      "canvas": {
+        "x": 421,
+        "y": 108,
+        "w": 494,
+        "h": 277,
+        "right": 915,
+        "bottom": 385
+      },
+      "overlaps": {
+        "menu_stage": false,
+        "stage_hud": false,
+        "menu_hud": false
+      }
+    },
+    "after": {
+      "innerWidth": 1280,
+      "scrollWidth": 1280,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 1280,
+      "stage": {
+        "x": 30,
+        "y": 299,
+        "w": 364,
+        "h": 303,
+        "right": 394,
+        "bottom": 602
+      },
+      "canvas": {
+        "x": 43,
+        "y": 312,
+        "w": 494,
+        "h": 277,
+        "right": 537,
+        "bottom": 589
+      },
+      "canvasStyleWidth": "494px"
+    },
+    "consoleErrors": []
+  },
+  {
+    "viewport": {
+      "width": 1180,
+      "height": 900
+    },
+    "before": {
+      "innerWidth": 1180,
+      "scrollWidth": 1180,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 1180,
+      "layoutColumns": "472.328px 661.266px",
+      "menu": {
+        "x": 16,
+        "y": 43,
+        "w": 472,
+        "h": 534,
+        "right": 488,
+        "bottom": 576
+      },
+      "stage": {
+        "x": 503,
+        "y": 43,
+        "w": 661,
+        "h": 396,
+        "right": 1164,
+        "bottom": 439
+      },
+      "hud": {
+        "x": 16,
+        "y": 591,
+        "w": 1148,
+        "h": 267,
+        "right": 1164,
+        "bottom": 857
+      },
+      "canvas": {
+        "x": 516,
+        "y": 56,
+        "w": 659,
+        "h": 370,
+        "right": 1175,
+        "bottom": 426
+      },
+      "overlaps": {
+        "menu_stage": false,
+        "stage_hud": false,
+        "menu_hud": false
+      }
+    },
+    "after": {
+      "innerWidth": 1180,
+      "scrollWidth": 1180,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 1180,
+      "stage": {
+        "x": 503,
+        "y": 104,
+        "w": 661,
+        "h": 396,
+        "right": 1164,
+        "bottom": 500
+      },
+      "canvas": {
+        "x": 516,
+        "y": 117,
+        "w": 659,
+        "h": 370,
+        "right": 1175,
+        "bottom": 487
+      },
+      "canvasStyleWidth": "659px"
+    },
+    "consoleErrors": []
+  },
+  {
+    "viewport": {
+      "width": 1100,
+      "height": 900
+    },
+    "before": {
+      "innerWidth": 1100,
+      "scrollWidth": 1100,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 1100,
+      "layoutColumns": "439px 614.594px",
+      "menu": {
+        "x": 16,
+        "y": 43,
+        "w": 439,
+        "h": 534,
+        "right": 455,
+        "bottom": 576
+      },
+      "stage": {
+        "x": 469,
+        "y": 43,
+        "w": 615,
+        "h": 370,
+        "right": 1084,
+        "bottom": 413
+      },
+      "hud": {
+        "x": 16,
+        "y": 591,
+        "w": 1068,
+        "h": 267,
+        "right": 1084,
+        "bottom": 857
+      },
+      "canvas": {
+        "x": 482,
+        "y": 56,
+        "w": 613,
+        "h": 344,
+        "right": 1095,
+        "bottom": 400
+      },
+      "overlaps": {
+        "menu_stage": false,
+        "stage_hud": false,
+        "menu_hud": false
+      }
+    },
+    "after": {
+      "innerWidth": 1100,
+      "scrollWidth": 1100,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 1100,
+      "stage": {
+        "x": 469,
+        "y": 117,
+        "w": 615,
+        "h": 370,
+        "right": 1084,
+        "bottom": 487
+      },
+      "canvas": {
+        "x": 482,
+        "y": 130,
+        "w": 613,
+        "h": 344,
+        "right": 1095,
+        "bottom": 474
+      },
+      "canvasStyleWidth": "613px"
+    },
+    "consoleErrors": []
+  },
+  {
+    "viewport": {
+      "width": 980,
+      "height": 900
+    },
+    "before": {
+      "innerWidth": 980,
+      "scrollWidth": 980,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 980,
+      "layoutColumns": "948px",
+      "menu": {
+        "x": 16,
+        "y": 16,
+        "w": 948,
+        "h": 415,
+        "right": 964,
+        "bottom": 431
+      },
+      "stage": {
+        "x": 16,
+        "y": 445,
+        "w": 948,
+        "h": 533,
+        "right": 964,
+        "bottom": 978
+      },
+      "hud": {
+        "x": 16,
+        "y": 992,
+        "w": 948,
+        "h": 267,
+        "right": 964,
+        "bottom": 1259
+      },
+      "canvas": {
+        "x": 40,
+        "y": 458,
+        "w": 901,
+        "h": 507,
+        "right": 941,
+        "bottom": 965
+      },
+      "overlaps": {
+        "menu_stage": false,
+        "stage_hud": false,
+        "menu_hud": false
+      }
+    },
+    "after": {
+      "innerWidth": 980,
+      "scrollWidth": 980,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 980,
+      "stage": {
+        "x": 16,
+        "y": 36,
+        "w": 948,
+        "h": 533,
+        "right": 964,
+        "bottom": 569
+      },
+      "canvas": {
+        "x": 40,
+        "y": 49,
+        "w": 901,
+        "h": 507,
+        "right": 941,
+        "bottom": 556
+      },
+      "canvasStyleWidth": "901px"
+    },
+    "consoleErrors": []
+  },
+  {
+    "viewport": {
+      "width": 900,
+      "height": 900
+    },
+    "before": {
+      "innerWidth": 900,
+      "scrollWidth": 900,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 900,
+      "layoutColumns": "868px",
+      "menu": {
+        "x": 16,
+        "y": 16,
+        "w": 868,
+        "h": 415,
+        "right": 884,
+        "bottom": 431
+      },
+      "stage": {
+        "x": 16,
+        "y": 444,
+        "w": 868,
+        "h": 491,
+        "right": 884,
+        "bottom": 935
+      },
+      "hud": {
+        "x": 16,
+        "y": 949,
+        "w": 868,
+        "h": 267,
+        "right": 884,
+        "bottom": 1215
+      },
+      "canvas": {
+        "x": 36,
+        "y": 457,
+        "w": 828,
+        "h": 465,
+        "right": 864,
+        "bottom": 922
+      },
+      "overlaps": {
+        "menu_stage": false,
+        "stage_hud": false,
+        "menu_hud": false
+      }
+    },
+    "after": {
+      "innerWidth": 900,
+      "scrollWidth": 900,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 900,
+      "stage": {
+        "x": 16,
+        "y": 57,
+        "w": 868,
+        "h": 491,
+        "right": 884,
+        "bottom": 548
+      },
+      "canvas": {
+        "x": 36,
+        "y": 70,
+        "w": 828,
+        "h": 465,
+        "right": 864,
+        "bottom": 535
+      },
+      "canvasStyleWidth": "828px"
+    },
+    "consoleErrors": []
+  },
+  {
+    "viewport": {
+      "width": 768,
+      "height": 900
+    },
+    "before": {
+      "innerWidth": 768,
+      "scrollWidth": 768,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 768,
+      "layoutColumns": "737.281px",
+      "menu": {
+        "x": 15,
+        "y": 15,
+        "w": 737,
+        "h": 450,
+        "right": 753,
+        "bottom": 466
+      },
+      "stage": {
+        "x": 15,
+        "y": 477,
+        "w": 737,
+        "h": 422,
+        "right": 753,
+        "bottom": 899
+      },
+      "hud": {
+        "x": 15,
+        "y": 911,
+        "w": 737,
+        "h": 267,
+        "right": 753,
+        "bottom": 1177
+      },
+      "canvas": {
+        "x": 31,
+        "y": 490,
+        "w": 706,
+        "h": 397,
+        "right": 737,
+        "bottom": 887
+      },
+      "overlaps": {
+        "menu_stage": false,
+        "stage_hud": false,
+        "menu_hud": false
+      }
+    },
+    "after": {
+      "innerWidth": 768,
+      "scrollWidth": 768,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 768,
+      "stage": {
+        "x": 15,
+        "y": 93,
+        "w": 737,
+        "h": 422,
+        "right": 753,
+        "bottom": 515
+      },
+      "canvas": {
+        "x": 31,
+        "y": 105,
+        "w": 706,
+        "h": 397,
+        "right": 737,
+        "bottom": 502
+      },
+      "canvasStyleWidth": "706px"
+    },
+    "consoleErrors": []
+  },
+  {
+    "viewport": {
+      "width": 640,
+      "height": 900
+    },
+    "before": {
+      "innerWidth": 640,
+      "scrollWidth": 640,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 640,
+      "layoutColumns": "614.406px",
+      "menu": {
+        "x": 13,
+        "y": 13,
+        "w": 614,
+        "h": 486,
+        "right": 627,
+        "bottom": 498
+      },
+      "stage": {
+        "x": 13,
+        "y": 508,
+        "w": 614,
+        "h": 352,
+        "right": 627,
+        "bottom": 860
+      },
+      "hud": {
+        "x": 13,
+        "y": 870,
+        "w": 614,
+        "h": 299,
+        "right": 627,
+        "bottom": 1169
+      },
+      "canvas": {
+        "x": 26,
+        "y": 518,
+        "w": 588,
+        "h": 331,
+        "right": 614,
+        "bottom": 849
+      },
+      "overlaps": {
+        "menu_stage": false,
+        "stage_hud": false,
+        "menu_hud": false
+      }
+    },
+    "after": {
+      "innerWidth": 640,
+      "scrollWidth": 640,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 640,
+      "stage": {
+        "x": 13,
+        "y": 111,
+        "w": 614,
+        "h": 352,
+        "right": 627,
+        "bottom": 463
+      },
+      "canvas": {
+        "x": 26,
+        "y": 122,
+        "w": 588,
+        "h": 331,
+        "right": 614,
+        "bottom": 453
+      },
+      "canvasStyleWidth": "588px"
+    },
+    "consoleErrors": []
+  },
+  {
+    "viewport": {
+      "width": 480,
+      "height": 900
+    },
+    "before": {
+      "innerWidth": 480,
+      "scrollWidth": 480,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 480,
+      "layoutColumns": "459.219px",
+      "menu": {
+        "x": 10,
+        "y": 10,
+        "w": 459,
+        "h": 527,
+        "right": 470,
+        "bottom": 538
+      },
+      "stage": {
+        "x": 10,
+        "y": 547,
+        "w": 459,
+        "h": 268,
+        "right": 470,
+        "bottom": 815
+      },
+      "hud": {
+        "x": 10,
+        "y": 824,
+        "w": 459,
+        "h": 299,
+        "right": 470,
+        "bottom": 1123
+      },
+      "canvas": {
+        "x": 20,
+        "y": 557,
+        "w": 441,
+        "h": 248,
+        "right": 461,
+        "bottom": 805
+      },
+      "overlaps": {
+        "menu_stage": false,
+        "stage_hud": false,
+        "menu_hud": false
+      }
+    },
+    "after": {
+      "innerWidth": 480,
+      "scrollWidth": 480,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 480,
+      "stage": {
+        "x": 10,
+        "y": 153,
+        "w": 459,
+        "h": 268,
+        "right": 470,
+        "bottom": 421
+      },
+      "canvas": {
+        "x": 20,
+        "y": 163,
+        "w": 441,
+        "h": 248,
+        "right": 461,
+        "bottom": 411
+      },
+      "canvasStyleWidth": "441px"
+    },
+    "consoleErrors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 900
+    },
+    "before": {
+      "innerWidth": 390,
+      "scrollWidth": 390,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 390,
+      "layoutColumns": "369.219px",
+      "menu": {
+        "x": 10,
+        "y": 10,
+        "w": 369,
+        "h": 703,
+        "right": 380,
+        "bottom": 714
+      },
+      "stage": {
+        "x": 10,
+        "y": 723,
+        "w": 369,
+        "h": 221,
+        "right": 380,
+        "bottom": 944
+      },
+      "hud": {
+        "x": 10,
+        "y": 953,
+        "w": 369,
+        "h": 332,
+        "right": 380,
+        "bottom": 1285
+      },
+      "canvas": {
+        "x": 20,
+        "y": 733,
+        "w": 358,
+        "h": 201,
+        "right": 378,
+        "bottom": 934
+      },
+      "overlaps": {
+        "menu_stage": false,
+        "stage_hud": false,
+        "menu_hud": false
+      }
+    },
+    "after": {
+      "innerWidth": 390,
+      "scrollWidth": 390,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 390,
+      "stage": {
+        "x": 10,
+        "y": 168,
+        "w": 369,
+        "h": 221,
+        "right": 380,
+        "bottom": 389
+      },
+      "canvas": {
+        "x": 20,
+        "y": 178,
+        "w": 358,
+        "h": 201,
+        "right": 378,
+        "bottom": 379
+      },
+      "canvasStyleWidth": "358px"
+    },
+    "consoleErrors": []
+  },
+  {
+    "viewport": {
+      "width": 360,
+      "height": 900
+    },
+    "before": {
+      "innerWidth": 360,
+      "scrollWidth": 360,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 360,
+      "layoutColumns": "339.219px",
+      "menu": {
+        "x": 10,
+        "y": 10,
+        "w": 339,
+        "h": 703,
+        "right": 350,
+        "bottom": 714
+      },
+      "stage": {
+        "x": 10,
+        "y": 723,
+        "w": 339,
+        "h": 206,
+        "right": 350,
+        "bottom": 929
+      },
+      "hud": {
+        "x": 10,
+        "y": 938,
+        "w": 339,
+        "h": 332,
+        "right": 350,
+        "bottom": 1270
+      },
+      "canvas": {
+        "x": 20,
+        "y": 733,
+        "w": 331,
+        "h": 186,
+        "right": 351,
+        "bottom": 919
+      },
+      "overlaps": {
+        "menu_stage": false,
+        "stage_hud": false,
+        "menu_hud": false
+      }
+    },
+    "after": {
+      "innerWidth": 360,
+      "scrollWidth": 360,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 360,
+      "stage": {
+        "x": 10,
+        "y": 157,
+        "w": 339,
+        "h": 206,
+        "right": 350,
+        "bottom": 363
+      },
+      "canvas": {
+        "x": 20,
+        "y": 167,
+        "w": 331,
+        "h": 186,
+        "right": 351,
+        "bottom": 353
+      },
+      "canvasStyleWidth": "331px"
+    },
+    "consoleErrors": []
+  },
+  {
+    "viewport": {
+      "width": 320,
+      "height": 900
+    },
+    "before": {
+      "innerWidth": 320,
+      "scrollWidth": 320,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 320,
+      "layoutColumns": "299.219px",
+      "menu": {
+        "x": 10,
+        "y": 10,
+        "w": 299,
+        "h": 761,
+        "right": 310,
+        "bottom": 771
+      },
+      "stage": {
+        "x": 10,
+        "y": 780,
+        "w": 299,
+        "h": 185,
+        "right": 310,
+        "bottom": 965
+      },
+      "hud": {
+        "x": 10,
+        "y": 975,
+        "w": 299,
+        "h": 349,
+        "right": 310,
+        "bottom": 1324
+      },
+      "canvas": {
+        "x": 20,
+        "y": 790,
+        "w": 294,
+        "h": 165,
+        "right": 314,
+        "bottom": 955
+      },
+      "overlaps": {
+        "menu_stage": false,
+        "stage_hud": false,
+        "menu_hud": false
+      }
+    },
+    "after": {
+      "innerWidth": 320,
+      "scrollWidth": 320,
+      "hasHorizontalOverflow": false,
+      "bodyScrollWidth": 320,
+      "stage": {
+        "x": 10,
+        "y": 159,
+        "w": 299,
+        "h": 185,
+        "right": 310,
+        "bottom": 344
+      },
+      "canvas": {
+        "x": 20,
+        "y": 169,
+        "w": 294,
+        "h": 165,
+        "right": 314,
+        "bottom": 334
+      },
+      "canvasStyleWidth": "294px"
+    },
+    "consoleErrors": []
+  }
+]

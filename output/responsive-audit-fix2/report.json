@@ -1,0 +1,157 @@
+[
+  {
+    "width": 1280,
+    "overflow": false,
+    "stage": {
+      "x": 408.359375,
+      "y": 300.640625,
+      "w": 496.34375,
+      "h": 290,
+      "right": 904.703125,
+      "bottom": 590.640625
+    },
+    "hud": {
+      "x": 919.09375,
+      "y": 300.640625,
+      "w": 330.90625,
+      "h": 298.71875,
+      "right": 1250,
+      "bottom": 599.359375
+    },
+    "canvas": {
+      "x": 421.53125,
+      "y": 313.640625,
+      "w": 470,
+      "h": 264,
+      "right": 891.53125,
+      "bottom": 577.640625
+    },
+    "canvasStyleWidth": "470px",
+    "canvasFitsStage": true,
+    "overlapStageHud": false
+  },
+  {
+    "width": 1180,
+    "overflow": false,
+    "stage": {
+      "x": 502.71875,
+      "y": 117.9375,
+      "w": 661.265625,
+      "h": 383,
+      "right": 1163.984375,
+      "bottom": 500.9375
+    },
+    "hud": {
+      "x": 16,
+      "y": 515.328125,
+      "w": 1147.984375,
+      "h": 266.71875,
+      "right": 1163.984375,
+      "bottom": 782.046875
+    },
+    "canvas": {
+      "x": 515.84375,
+      "y": 130.9375,
+      "w": 635,
+      "h": 357,
+      "right": 1150.84375,
+      "bottom": 487.9375
+    },
+    "canvasStyleWidth": "635px",
+    "canvasFitsStage": true,
+    "overlapStageHud": false
+  },
+  {
+    "width": 1100,
+    "overflow": false,
+    "stage": {
+      "x": 469.390625,
+      "y": 130.9375,
+      "w": 614.59375,
+      "h": 357,
+      "right": 1083.984375,
+      "bottom": 487.9375
+    },
+    "hud": {
+      "x": 16,
+      "y": 502.328125,
+      "w": 1067.984375,
+      "h": 266.71875,
+      "right": 1083.984375,
+      "bottom": 769.046875
+    },
+    "canvas": {
+      "x": 482.390625,
+      "y": 143.9375,
+      "w": 589,
+      "h": 331,
+      "right": 1071.390625,
+      "bottom": 474.9375
+    },
+    "canvasStyleWidth": "589px",
+    "canvasFitsStage": true,
+    "overlapStageHud": false
+  },
+  {
+    "width": 900,
+    "overflow": false,
+    "stage": {
+      "x": 16,
+      "y": 64.390625,
+      "w": 868,
+      "h": 491,
+      "right": 884,
+      "bottom": 555.390625
+    },
+    "hud": {
+      "x": 16,
+      "y": 568.890625,
+      "w": 868,
+      "h": 266.71875,
+      "right": 884,
+      "bottom": 835.609375
+    },
+    "canvas": {
+      "x": 36,
+      "y": 77.390625,
+      "w": 828,
+      "h": 465,
+      "right": 864,
+      "bottom": 542.390625
+    },
+    "canvasStyleWidth": "828px",
+    "canvasFitsStage": true,
+    "overlapStageHud": false
+  },
+  {
+    "width": 320,
+    "overflow": false,
+    "stage": {
+      "x": 10.390625,
+      "y": 182.96875,
+      "w": 299.21875,
+      "h": 176.59375,
+      "right": 309.609375,
+      "bottom": 359.5625
+    },
+    "hud": {
+      "x": 10.390625,
+      "y": 369.15625,
+      "w": 299.21875,
+      "h": 347.875,
+      "right": 309.609375,
+      "bottom": 717.03125
+    },
+    "canvas": {
+      "x": 20.5,
+      "y": 192.765625,
+      "w": 279,
+      "h": 157,
+      "right": 299.5,
+      "bottom": 349.765625
+    },
+    "canvasStyleWidth": "279px",
+    "canvasFitsStage": true,
+    "overlapStageHud": false
+  }
+]

@@ -39,6 +39,10 @@ body {
   min-width: 0;
 }
 
+.menu { grid-column: 1; }
+.stage { grid-column: 2; }
+.hud { grid-column: 3; }
+
 .menu,
 .hud {
   background: linear-gradient(170deg, var(--panel), var(--panel-soft));

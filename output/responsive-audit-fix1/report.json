@@ -1,0 +1,560 @@
+[
+  {
+    "width": 1280,
+    "before": {
+      "overflow": false,
+      "stage": {
+        "x": 408.359375,
+        "y": 95.234375,
+        "w": 496.34375,
+        "h": 292.3125,
+        "right": 904.703125,
+        "bottom": 387.546875
+      },
+      "hud": {
+        "x": 919.09375,
+        "y": 95.234375,
+        "w": 330.90625,
+        "h": 282.71875,
+        "right": 1250,
+        "bottom": 377.953125
+      },
+      "canvas": {
+        "x": 421.359375,
+        "y": 108.234375,
+        "w": 470.34375,
+        "h": 266.3125,
+        "right": 891.703125,
+        "bottom": 374.546875
+      },
+      "canvasFitsStage": true
+    },
+    "after": {
+      "overflow": false,
+      "stage": {
+        "x": 408.359375,
+        "y": 298.5,
+        "w": 496.34375,
+        "h": 303,
+        "right": 904.703125,
+        "bottom": 601.5
+      },
+      "hud": {
+        "x": 919.09375,
+        "y": 298.5,
+        "w": 330.90625,
+        "h": 298.71875,
+        "right": 1250,
+        "bottom": 597.21875
+      },
+      "canvas": {
+        "x": 421.359375,
+        "y": 311.5,
+        "w": 494,
+        "h": 277,
+        "right": 915.359375,
+        "bottom": 588.5
+      },
+      "canvasStyleWidth": "494px",
+      "canvasFitsStage": false,
+      "overlapStageHud": false
+    },
+    "consoleErrors": []
+  },
+  {
+    "width": 1180,
+    "before": {
+      "overflow": false,
+      "stage": {
+        "x": 502.71875,
+        "y": 42.65625,
+        "w": 661.265625,
+        "h": 396,
+        "right": 1163.984375,
+        "bottom": 438.65625
+      },
+      "hud": {
+        "x": 16,
+        "y": 590.609375,
+        "w": 1147.984375,
+        "h": 266.71875,
+        "right": 1163.984375,
+        "bottom": 857.328125
+      },
+      "canvas": {
+        "x": 515.71875,
+        "y": 55.65625,
+        "w": 659,
+        "h": 370,
+        "right": 1174.71875,
+        "bottom": 425.65625
+      },
+      "canvasFitsStage": false
+    },
+    "after": {
+      "overflow": false,
+      "stage": {
+        "x": 502.71875,
+        "y": 111.4375,
+        "w": 661.265625,
+        "h": 396,
+        "right": 1163.984375,
+        "bottom": 507.4375
+      },
+      "hud": {
+        "x": 16,
+        "y": 521.828125,
+        "w": 1147.984375,
+        "h": 266.71875,
+        "right": 1163.984375,
+        "bottom": 788.546875
+      },
+      "canvas": {
+        "x": 515.71875,
+        "y": 124.4375,
+        "w": 659,
+        "h": 370,
+        "right": 1174.71875,
+        "bottom": 494.4375
+      },
+      "canvasStyleWidth": "659px",
+      "canvasFitsStage": false,
+      "overlapStageHud": false
+    },
+    "consoleErrors": []
+  },
+  {
+    "width": 1100,
+    "before": {
+      "overflow": false,
+      "stage": {
+        "x": 469.390625,
+        "y": 42.65625,
+        "w": 614.59375,
+        "h": 358.828125,
+        "right": 1083.984375,
+        "bottom": 401.484375
+      },
+      "hud": {
+        "x": 16,
+        "y": 590.609375,
+        "w": 1067.984375,
+        "h": 266.71875,
+        "right": 1083.984375,
+        "bottom": 857.328125
+      },
+      "canvas": {
+        "x": 482.390625,
+        "y": 55.65625,
+        "w": 588.59375,
+        "h": 332.828125,
+        "right": 1070.984375,
+        "bottom": 388.484375
+      },
+      "canvasFitsStage": true
+    },
+    "after": {
+      "overflow": false,
+      "stage": {
+        "x": 469.390625,
+        "y": 124.4375,
+        "w": 614.59375,
+        "h": 370,
+        "right": 1083.984375,
+        "bottom": 494.4375
+      },
+      "hud": {
+        "x": 16,
+        "y": 508.828125,
+        "w": 1067.984375,
+        "h": 266.71875,
+        "right": 1083.984375,
+        "bottom": 775.546875
+      },
+      "canvas": {
+        "x": 482.390625,
+        "y": 137.4375,
+        "w": 613,
+        "h": 344,
+        "right": 1095.390625,
+        "bottom": 481.4375
+      },
+      "canvasStyleWidth": "613px",
+      "canvasFitsStage": false,
+      "overlapStageHud": false
+    },
+    "consoleErrors": []
+  },
+  {
+    "width": 980,
+    "before": {
+      "overflow": false,
+      "stage": {
+        "x": 16,
+        "y": 445.0625,
+        "w": 948,
+        "h": 533,
+        "right": 964,
+        "bottom": 978.0625
+      },
+      "hud": {
+        "x": 16,
+        "y": 992.453125,
+        "w": 948,
+        "h": 266.71875,
+        "right": 964,
+        "bottom": 1259.171875
+      },
+      "canvas": {
+        "x": 39.5,
+        "y": 458.0625,
+        "w": 901,
+        "h": 507,
+        "right": 940.5,
+        "bottom": 965.0625
+      },
+      "canvasFitsStage": true
+    },
+    "after": {
+      "overflow": false,
+      "stage": {
+        "x": 16,
+        "y": 42.9375,
+        "w": 948,
+        "h": 533,
+        "right": 964,
+        "bottom": 575.9375
+      },
+      "hud": {
+        "x": 16,
+        "y": 590.328125,
+        "w": 948,
+        "h": 266.71875,
+        "right": 964,
+        "bottom": 857.046875
+      },
+      "canvas": {
+        "x": 39.5,
+        "y": 55.9375,
+        "w": 901,
+        "h": 507,
+        "right": 940.5,
+        "bottom": 562.9375
+      },
+      "canvasStyleWidth": "901px",
+      "canvasFitsStage": true,
+      "overlapStageHud": false
+    },
+    "consoleErrors": []
+  },
+  {
+    "width": 900,
+    "before": {
+      "overflow": false,
+      "stage": {
+        "x": 16,
+        "y": 444.171875,
+        "w": 868,
+        "h": 501.375,
+        "right": 884,
+        "bottom": 945.546875
+      },
+      "hud": {
+        "x": 16,
+        "y": 959.046875,
+        "w": 868,
+        "h": 266.71875,
+        "right": 884,
+        "bottom": 1225.765625
+      },
+      "canvas": {
+        "x": 29,
+        "y": 457.171875,
+        "w": 842,
+        "h": 475.375,
+        "right": 871,
+        "bottom": 932.546875
+      },
+      "canvasFitsStage": true
+    },
+    "after": {
+      "overflow": false,
+      "stage": {
+        "x": 16,
+        "y": 64.390625,
+        "w": 868,
+        "h": 491,
+        "right": 884,
+        "bottom": 555.390625
+      },
+      "hud": {
+        "x": 16,
+        "y": 568.890625,
+        "w": 868,
+        "h": 266.71875,
+        "right": 884,
+        "bottom": 835.609375
+      },
+      "canvas": {
+        "x": 36,
+        "y": 77.390625,
+        "w": 828,
+        "h": 465,
+        "right": 864,
+        "bottom": 542.390625
+      },
+      "canvasStyleWidth": "828px",
+      "canvasFitsStage": true,
+      "overlapStageHud": false
+    },
+    "consoleErrors": []
+  },
+  {
+    "width": 768,
+    "before": {
+      "overflow": false,
+      "stage": {
+        "x": 15.359375,
+        "y": 477.125,
+        "w": 737.28125,
+        "h": 427.421875,
+        "right": 752.640625,
+        "bottom": 904.546875
+      },
+      "hud": {
+        "x": 15.359375,
+        "y": 916.0625,
+        "w": 737.28125,
+        "h": 266.71875,
+        "right": 752.640625,
+        "bottom": 1182.78125
+      },
+      "canvas": {
+        "x": 27.875,
+        "y": 489.640625,
+        "w": 712.25,
+        "h": 402.390625,
+        "right": 740.125,
+        "bottom": 892.03125
+      },
+      "canvasFitsStage": true
+    },
+    "after": {
+      "overflow": false,
+      "stage": {
+        "x": 15.359375,
+        "y": 99.859375,
+        "w": 737.28125,
+        "h": 422.03125,
+        "right": 752.640625,
+        "bottom": 521.890625
+      },
+      "hud": {
+        "x": 15.359375,
+        "y": 533.40625,
+        "w": 737.28125,
+        "h": 266.71875,
+        "right": 752.640625,
+        "bottom": 800.125
+      },
+      "canvas": {
+        "x": 31,
+        "y": 112.375,
+        "w": 706,
+        "h": 397,
+        "right": 737,
+        "bottom": 509.375
+      },
+      "canvasStyleWidth": "706px",
+      "canvasFitsStage": true,
+      "overlapStageHud": false
+    },
+    "consoleErrors": []
+  },
+  {
+    "width": 640,
+    "before": {
+      "overflow": false,
+      "stage": {
+        "x": 12.796875,
+        "y": 507.890625,
+        "w": 614.40625,
+        "h": 356.609375,
+        "right": 627.203125,
+        "bottom": 864.5
+      },
+      "hud": {
+        "x": 12.796875,
+        "y": 874.09375,
+        "w": 614.40625,
+        "h": 298.875,
+        "right": 627.203125,
+        "bottom": 1172.96875
+      },
+      "canvas": {
+        "x": 23.390625,
+        "y": 518.484375,
+        "w": 593.21875,
+        "h": 335.421875,
+        "right": 616.609375,
+        "bottom": 853.90625
+      },
+      "canvasFitsStage": true
+    },
+    "after": {
+      "overflow": false,
+      "stage": {
+        "x": 12.796875,
+        "y": 119.671875,
+        "w": 614.40625,
+        "h": 352.1875,
+        "right": 627.203125,
+        "bottom": 471.859375
+      },
+      "hud": {
+        "x": 12.796875,
+        "y": 481.453125,
+        "w": 614.40625,
+        "h": 298.875,
+        "right": 627.203125,
+        "bottom": 780.328125
+      },
+      "canvas": {
+        "x": 26,
+        "y": 130.265625,
+        "w": 588,
+        "h": 331,
+        "right": 614,
+        "bottom": 461.265625
+      },
+      "canvasStyleWidth": "588px",
+      "canvasFitsStage": true,
+      "overlapStageHud": false
+    },
+    "consoleErrors": []
+  },
+  {
+    "width": 390,
+    "before": {
+      "overflow": false,
+      "stage": {
+        "x": 10.390625,
+        "y": 723.109375,
+        "w": 369.21875,
+        "h": 220.59375,
+        "right": 379.609375,
+        "bottom": 943.703125
+      },
+      "hud": {
+        "x": 10.390625,
+        "y": 953.296875,
+        "w": 369.21875,
+        "h": 331.875,
+        "right": 379.609375,
+        "bottom": 1285.171875
+      },
+      "canvas": {
+        "x": 20.1875,
+        "y": 732.90625,
+        "w": 358,
+        "h": 201,
+        "right": 378.1875,
+        "bottom": 933.90625
+      },
+      "canvasFitsStage": true
+    },
+    "after": {
+      "overflow": false,
+      "stage": {
+        "x": 10.390625,
+        "y": 177.46875,
+        "w": 369.21875,
+        "h": 220.59375,
+        "right": 379.609375,
+        "bottom": 398.0625
+      },
+      "hud": {
+        "x": 10.390625,
+        "y": 407.65625,
+        "w": 369.21875,
+        "h": 314.875,
+        "right": 379.609375,
+        "bottom": 722.53125
+      },
+      "canvas": {
+        "x": 20.1875,
+        "y": 187.265625,
+        "w": 358,
+        "h": 201,
+        "right": 378.1875,
+        "bottom": 388.265625
+      },
+      "canvasStyleWidth": "358px",
+      "canvasFitsStage": true,
+      "overlapStageHud": false
+    },
+    "consoleErrors": []
+  },
+  {
+    "width": 320,
+    "before": {
+      "overflow": false,
+      "stage": {
+        "x": 10.390625,
+        "y": 780.484375,
+        "w": 299.21875,
+        "h": 178.625,
+        "right": 309.609375,
+        "bottom": 959.109375
+      },
+      "hud": {
+        "x": 10.390625,
+        "y": 968.703125,
+        "w": 299.21875,
+        "h": 314.875,
+        "right": 309.609375,
+        "bottom": 1283.578125
+      },
+      "canvas": {
+        "x": 20.1875,
+        "y": 790.28125,
+        "w": 279.625,
+        "h": 159.03125,
+        "right": 299.8125,
+        "bottom": 949.3125
+      },
+      "canvasFitsStage": true
+    },
+    "after": {
+      "overflow": false,
+      "stage": {
+        "x": 10.390625,
+        "y": 178.96875,
+        "w": 299.21875,
+        "h": 184.59375,
+        "right": 309.609375,
+        "bottom": 363.5625
+      },
+      "hud": {
+        "x": 10.390625,
+        "y": 373.15625,
+        "w": 299.21875,
+        "h": 347.875,
+        "right": 309.609375,
+        "bottom": 721.03125
+      },
+      "canvas": {
+        "x": 20.1875,
+        "y": 188.765625,
+        "w": 294,
+        "h": 165,
+        "right": 314.1875,
+        "bottom": 353.765625
+      },
+      "canvasStyleWidth": "294px",
+      "canvasFitsStage": false,
+      "overlapStageHud": false
+    },
+    "consoleErrors": []
+  }
+]
